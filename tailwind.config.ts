@@ -89,7 +89,7 @@ export default {
           },
         },
         'speak-sprite': {
-          'to': { backgroundPositionX: '-1536px' },
+          'to': { backgroundPositionX: '-1568px' },
         }
       },
       animation: {

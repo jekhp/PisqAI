@@ -10,17 +10,17 @@ export default function LlamaAvatar({ status, className }: LlamaAvatarProps) {
     switch (status) {
       case 'speaking':
         // Anima la segunda fila de la hoja de sprites (cuadros para hablar)
-        return 'animate-speak-sprite [background-position-y:-341px]';
+        return 'animate-speak-sprite [background-position:-32px_-341px]';
       case 'listening':
         // Usa el tercer cuadro de la primera fila
-        return '[background-position:-768px_0px]';
+        return '[background-position:-800px_0px]';
       case 'thinking':
         // Usa el primer cuadro de la tercera fila
-        return '[background-position:0px_-682px]';
+        return '[background-position:-32px_-682px]';
       case 'idle':
       default:
         // Usa el primer cuadro de la primera fila
-        return '[background-position:0px_0px]';
+        return '[background-position:-32px_0px]';
     }
   };
 
