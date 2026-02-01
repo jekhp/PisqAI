@@ -105,25 +105,33 @@ const FireAnimation = ({ isSpeaking, className }: FireAnimationProps) => {
     };
 
     const animateFires = () => {
-      baseTimeRef.current += 0.02;
+      baseTimeRef.current += 0.03;
 
       firesRef.current.forEach((fire, index) => {
-        const time = baseTimeRef.current * 1.5;
+        const time = baseTimeRef.current;
+        
+        const energy1 = Math.sin(time * (6 + fire.sizeFactor * 2) + fire.oscillationPhase);
+        const energy2 = Math.sin(time * 3 + index / 5);
+        const randomJitter = (Math.random() - 0.5) * 0.3;
 
-        const sizeOscillation = Math.sin(time * fire.oscillationSpeed + fire.oscillationPhase) * Math.sin(time * 0.3) * 0.3 + 1;
-        const verticalOscillation = Math.sin(time * fire.oscillationSpeed * 1.2 + fire.oscillationPhase * 0.7) * 15;
-        const horizontalOscillation = Math.cos(time * fire.oscillationSpeed * 0.8 + fire.oscillationPhase) * 10;
+        let voiceEnergy = (energy1 * 0.6 + energy2 * 0.4 + 1) / 2;
+        voiceEnergy = voiceEnergy * 0.9 + 0.1;
+        voiceEnergy += randomJitter;
+        voiceEnergy = Math.max(0.1, Math.min(1.2, voiceEnergy));
 
-        const newWidth = fire.baseWidth * sizeOscillation;
-        const newHeight = fire.baseHeight * (sizeOscillation * 0.9 + 0.1);
+        const newHeight = fire.baseHeight * voiceEnergy * (1 + fire.sizeFactor * 0.2);
+        const newWidth = fire.baseWidth * (voiceEnergy * 0.7 + 0.3);
+        
+        const verticalOscillation = (voiceEnergy - 0.5) * 25 * fire.sizeFactor;
+        const horizontalOscillation = (Math.random() - 0.5) * 8;
 
-        fire.element.style.width = `${newWidth}px`;
         fire.element.style.height = `${newHeight}px`;
+        fire.element.style.width = `${newWidth}px`;
         fire.element.style.left = `${fire.baseX - newWidth / 2 + horizontalOscillation}px`;
-        fire.element.style.bottom = `${verticalOscillation}px`;
+        fire.element.style.bottom = `${Math.max(0, verticalOscillation)}px`;
 
-        const opacity = 0.7 + Math.sin(time * 2 + index) * 0.2;
-        const blur = 6 + Math.sin(time * 3 + index) * 2;
+        const opacity = 0.6 + voiceEnergy * 0.4;
+        const blur = 4 + (1 - voiceEnergy) * 8;
 
         fire.element.style.opacity = opacity.toString();
         fire.element.style.filter = `blur(${blur}px)`;
@@ -144,12 +152,14 @@ const FireAnimation = ({ isSpeaking, className }: FireAnimationProps) => {
         animationIdRef.current = null;
       }
        firesRef.current.forEach(fire => {
-            fire.element.style.width = `${fire.baseWidth * 0.8}px`;
-            fire.element.style.height = `${fire.baseHeight * 0.8}px`;
-            fire.element.style.left = `${fire.baseX - (fire.baseWidth * 0.8) / 2}px`;
+            const calmHeight = fire.baseHeight * 0.3;
+            const calmWidth = fire.baseWidth * 0.4;
+            fire.element.style.height = `${calmHeight}px`;
+            fire.element.style.width = `${calmWidth}px`;
+            fire.element.style.left = `${fire.baseX - calmWidth / 2}px`;
             fire.element.style.bottom = `0px`;
             fire.element.style.opacity = '0.7';
-            fire.element.style.filter = 'blur(8px)';
+            fire.element.style.filter = 'blur(10px)';
         });
     }
 
