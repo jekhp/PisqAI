@@ -16,7 +16,7 @@ const responses: Record<string, string[]> = {
     '¡Hola amigo! ¿En qué puedo ayudarte?',
     '¡Hola! ¿Cómo te va el día?',
   ],
-  'como te llamas': [
+  'cómo te llamas': [
     'Mi nombre es PisqAI, ¡un gusto conocerte!',
     'Soy PisqAI, tu asistente virtual.',
     'Puedes llamarme PisqAI.'
