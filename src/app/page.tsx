@@ -6,9 +6,56 @@ import ChatInterface, { type Message } from '@/components/chat-interface';
 import FloatingControls from '@/components/floating-controls';
 import LlamaAvatar from '@/components/llama-avatar';
 import ParticleBackground from '@/components/particle-background';
-import AudioVisualizer from '@/components/audio-visualizer';
-import { useVoiceRecognition } from '@/hooks/use-voice-recognition';
-import { useToast } from '@/hooks/use-toast';
+import { useSpeechRecognition } from '@/hooks/use-speech-recognition';
+
+const responses: Record<string, string[]> = {
+  hola: [
+    '¡Hola! ¿Cómo estás?',
+    '¡Hola! ¿Qué tal?',
+    '¡Hola! Me alegra escucharte',
+    '¡Hola amigo! ¿En qué puedo ayudarte?',
+    '¡Hola! ¿Cómo te va el día?',
+  ],
+  adios: [
+    '¡Adiós! Que tengas un buen día',
+    '¡Adiós! Hasta luego',
+    '¡Adiós! Fue un placer hablar contigo',
+    '¡Adiós! Nos vemos pronto',
+    '¡Adiós! Cuídate mucho',
+  ],
+  ayuda: [
+    'Estoy aquí para ayudarte',
+    '¿En qué necesitas ayuda?',
+    'Dime, ¿qué necesitas?',
+  ],
+  gracias: [
+    '¡De nada! Para eso estoy',
+    'Es un placer ayudarte',
+    'No hay de qué',
+  ],
+  allillanchu: [
+    'Si todo bien',
+    'si todo bien',
+    'si todo bien',
+  ],
+  si: ['Entendido', 'Muy bien', 'Perfecto'],
+  no: ['Ok, como prefieras', 'Entiendo', 'Sin problema'],
+};
+
+const getResponse = (text: string) => {
+  const cleanText = text.toLowerCase().replace(/[.,!?;:]/g, '');
+  const words = cleanText.split(' ');
+  
+  for (const word of words) {
+    if (responses[word]) {
+      const responseList = responses[word];
+      return responseList[Math.floor(Math.random() * responseList.length)];
+    }
+  }
+
+  return `No entendí tu mensaje. Prueba con palabras como 'hola', 'adios', 'ayuda', etc.`;
+};
+
 
 export default function Home() {
   const [messages, setMessages] = useState<Message[]>([
@@ -21,15 +68,6 @@ export default function Home() {
   const [avatarStatus, setAvatarStatus] = useState<
     'idle' | 'thinking' | 'speaking' | 'listening'
   >('idle');
-  const { toast } = useToast();
-
-  const {
-    isListening,
-    startListening,
-    stopListening,
-    analyser,
-    getResponse,
-  } = useVoiceRecognition(onWordDetected);
 
   const speak = useCallback(
     (text: string) => {
@@ -45,61 +83,30 @@ export default function Home() {
           setAvatarStatus('speaking');
         };
         utterance.onend = () => {
-          setAvatarStatus(isListening ? 'listening' : 'idle');
+          setAvatarStatus('idle'); 
           resolve();
         };
         utterance.onerror = () => {
-          setAvatarStatus(isListening ? 'listening' : 'idle');
+          setAvatarStatus('idle');
           resolve();
         };
 
         speechSynthesis.speak(utterance);
       });
     },
-    [isListening]
+    []
   );
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  function onWordDetected(word: string, confidence: number) {
-    stopListening();
+  const processAndRespond = useCallback(async (text: string) => {
+    if (avatarStatus === 'thinking' || avatarStatus === 'speaking') return;
 
-    const userMessage = { id: crypto.randomUUID(), text: word, sender: 'user' as const };
-    setMessages([userMessage]);
-
-    setAvatarStatus('thinking');
-    const responseText = getResponse(word);
-
-    setTimeout(async () => {
-      const aiMessage = { id: crypto.randomUUID(), text: responseText, sender: 'ai' as const };
-      setMessages([userMessage, aiMessage]);
-      await speak(responseText);
-    }, 1000);
-  }
-
-  useEffect(() => {
-    if (avatarStatus !== 'speaking' && avatarStatus !== 'thinking') {
-      setAvatarStatus(isListening ? 'listening' : 'idle');
-    }
-  }, [isListening, avatarStatus]);
-
-  const sendMessage = async (text: string) => {
     const userMessage = { id: crypto.randomUUID(), text, sender: 'user' as const };
     setMessages([userMessage]);
     setAvatarStatus('thinking');
 
-    // Mock AI response
     await new Promise((res) => setTimeout(res, 1000));
 
-    const words = text.toLowerCase().replace(/[.,!?;:]/g, '').split(' ');
-    let responseText = `No entendí tu mensaje. Prueba con palabras como 'hola', 'adios', 'ayuda', etc.`;
-
-    for (const word of words) {
-      const potentialResponse = getResponse(word);
-      if (!potentialResponse.startsWith('Detecté "')) {
-        responseText = potentialResponse;
-        break;
-      }
-    }
+    const responseText = getResponse(text);
 
     const aiMessage = {
       id: crypto.randomUUID(),
@@ -108,7 +115,20 @@ export default function Home() {
     };
     setMessages([userMessage, aiMessage]);
     await speak(responseText);
-  };
+  }, [avatarStatus, speak]);
+  
+  const {
+    isListening,
+    startListening,
+    stopListening,
+  } = useSpeechRecognition({ onTranscript: processAndRespond });
+
+  useEffect(() => {
+    if (avatarStatus !== 'speaking' && avatarStatus !== 'thinking') {
+      setAvatarStatus(isListening ? 'listening' : 'idle');
+    }
+  }, [isListening, avatarStatus]);
+  
 
   return (
     <div className="relative h-screen w-full overflow-hidden">
@@ -119,15 +139,11 @@ export default function Home() {
           <LlamaAvatar status={avatarStatus} />
         </div>
 
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-lg pointer-events-none">
-          <AudioVisualizer analyser={analyser} isListening={isListening} />
-        </div>
-
         <div className="px-4 pb-4">
           <ChatInterface
             messages={messages}
             loading={avatarStatus === 'thinking'}
-            sendMessage={sendMessage}
+            sendMessage={processAndRespond}
           />
         </div>
       </main>
