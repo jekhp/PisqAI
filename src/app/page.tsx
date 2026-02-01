@@ -63,8 +63,7 @@ export default function Home() {
   function onWordDetected(word: string, confidence: number) {
     stopListening();
 
-    setMessages((prev) => [
-      ...prev,
+    setMessages([
       { id: crypto.randomUUID(), text: word, sender: 'user' },
     ]);
 
@@ -87,8 +86,7 @@ export default function Home() {
   }, [isListening, avatarStatus]);
 
   const sendMessage = async (text: string) => {
-    setMessages((prev) => [
-      ...prev,
+    setMessages([
       { id: crypto.randomUUID(), text, sender: 'user' },
     ]);
     setAvatarStatus('thinking');
