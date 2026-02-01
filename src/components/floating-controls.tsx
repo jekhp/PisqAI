@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Mic, User } from 'lucide-react';
+import { Mic } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 import { Button } from '@/components/ui/button';
@@ -36,21 +36,6 @@ export default function FloatingControls() {
           </TooltipTrigger>
           <TooltipContent side="left">
             <p>{isListening ? 'Stop Listening' : 'Start Listening'}</p>
-          </TooltipContent>
-        </Tooltip>
-
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              size="icon"
-              variant="ghost"
-              className="w-12 h-12 rounded-full bg-white/10 backdrop-blur-md text-white/80 hover:bg-white/20 hover:text-white"
-            >
-              <User className="w-6 h-6" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent side="left">
-            <p>Account</p>
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>
