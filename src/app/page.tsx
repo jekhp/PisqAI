@@ -16,7 +16,7 @@ const responses: Record<string, string[]> = {
     '¡Hola amigo! ¿En qué puedo ayudarte?',
     '¡Hola! ¿Cómo te va el día?',
   ],
-  adios: [
+  adiós: [
     '¡Adiós! Que tengas un buen día',
     '¡Adiós! Hasta luego',
     '¡Adiós! Fue un placer hablar contigo',

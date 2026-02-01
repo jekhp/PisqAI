@@ -1,0 +1,1 @@
+Por favor, sube tu archivo `llama-sprite.png` a esta carpeta `/public`.

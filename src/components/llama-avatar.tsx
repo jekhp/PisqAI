@@ -6,6 +6,24 @@ type LlamaAvatarProps = {
 };
 
 export default function LlamaAvatar({ status, className }: LlamaAvatarProps) {
+  const getStatusStyles = () => {
+    switch (status) {
+      case 'speaking':
+        // Anima la segunda fila de la hoja de sprites (cuadros para hablar)
+        return 'animate-speak-sprite [background-position-y:-341px]';
+      case 'listening':
+        // Usa el tercer cuadro de la primera fila
+        return '[background-position:-768px_0px]';
+      case 'thinking':
+        // Usa el primer cuadro de la tercera fila
+        return '[background-position:0px_-682px]';
+      case 'idle':
+      default:
+        // Usa el primer cuadro de la primera fila
+        return '[background-position:0px_0px]';
+    }
+  };
+
   return (
     <div
       className={cn(
@@ -21,78 +39,18 @@ export default function LlamaAvatar({ status, className }: LlamaAvatarProps) {
           status !== 'thinking' && status !== 'listening' && 'scale-75 opacity-0'
         )}
       />
-      <svg
-        viewBox="0 0 100 100"
-        className={cn(
-          'w-full h-full transition-transform duration-500 z-10',
-          (status === 'thinking' || status === 'speaking') && 'scale-105'
-        )}
-      >
-        <defs>
-          <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
-            <feGaussianBlur stdDeviation="3" result="coloredBlur" />
-            <feMerge>
-              <feMergeNode in="coloredBlur" />
-              <feMergeNode in="SourceGraphic" />
-            </feMerge>
-          </filter>
-        </defs>
-        <path
-          d="
-            M 50,20
-            C 45,20 40,25 40,30
-            L 40,35
-            C 30,35 25,45 25,55
-            L 25,80
-            C 25,85 30,90 35,90
-            L 45,90
-            C 50,90 50,85 50,80
-            L 50,75
-
-            M 50,75
-            L 50,80
-            C 50,85 55,90 60,90
-            L 70,90
-            C 75,90 80,85 80,80
-            L 80,55
-            C 80,45 75,35 65,35
-            L 65,30
-            C 65,25 60,20 55,20
-            L 50,20
-            
-            M 50,20
-            L 50,10
-            C 45,10 42,15 45,15
-            C 40,5 50,5 50,5
-            C 50,5 60,5 55,15
-            C 58,15 55,10 50,10
-
-            M 40,30
-            L 35,22
-            
-            M 65,30
-            L 70,22
-          "
-          stroke="hsl(var(--primary))"
-          strokeWidth="2.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          fill="none"
-          className={cn(
-            'transition-all duration-500',
-            (status === 'thinking' ||
-              status === 'speaking' ||
-              status === 'listening') &&
-              'filter-[url(#glow)]'
-          )}
-        />
-      </svg>
       <div
-        className="absolute bottom-0 w-3/4 h-1 bg-primary/20 rounded-full"
+        className={cn(
+          'w-[384px] h-[341px] scale-[0.6] md:scale-[0.75] origin-center bg-no-repeat',
+          'transition-transform duration-500 z-10',
+          (status === 'thinking' || status === 'speaking') && 'scale-[0.65] md:scale-[0.8]',
+          getStatusStyles()
+        )}
         style={{
-          boxShadow: '0 0 20px 5px hsl(var(--primary) / 0.1)',
+          backgroundImage: 'url(/llama-sprite.png)',
+          backgroundSize: '1536px 1024px',
         }}
-      />
+      ></div>
     </div>
   );
 }

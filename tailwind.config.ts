@@ -88,10 +88,14 @@ export default {
             height: '0',
           },
         },
+        'speak-sprite': {
+          'to': { backgroundPositionX: '-1536px' },
+        }
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
+        'speak-sprite': 'speak-sprite 0.8s steps(4) infinite',
       },
     },
   },
