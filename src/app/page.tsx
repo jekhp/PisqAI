@@ -15,7 +15,7 @@ export default function Home() {
     {
       id: '1',
       sender: 'ai',
-      text: "¡Hola! Soy LlamaIA. Presiona el micrófono para hablar conmigo.",
+      text: "¡Hola! Soy PisqAI. Presiona el micrófono para hablar conmigo.",
     },
   ]);
   const [avatarStatus, setAvatarStatus] = useState<
@@ -63,18 +63,15 @@ export default function Home() {
   function onWordDetected(word: string, confidence: number) {
     stopListening();
 
-    setMessages([
-      { id: crypto.randomUUID(), text: word, sender: 'user' },
-    ]);
+    const userMessage = { id: crypto.randomUUID(), text: word, sender: 'user' as const };
+    setMessages([userMessage]);
 
     setAvatarStatus('thinking');
     const responseText = getResponse(word);
 
     setTimeout(async () => {
-      setMessages((prev) => [
-        ...prev,
-        { id: crypto.randomUUID(), text: responseText, sender: 'ai' },
-      ]);
+      const aiMessage = { id: crypto.randomUUID(), text: responseText, sender: 'ai' as const };
+      setMessages([userMessage, aiMessage]);
       await speak(responseText);
     }, 1000);
   }
@@ -86,9 +83,8 @@ export default function Home() {
   }, [isListening, avatarStatus]);
 
   const sendMessage = async (text: string) => {
-    setMessages([
-      { id: crypto.randomUUID(), text, sender: 'user' },
-    ]);
+    const userMessage = { id: crypto.randomUUID(), text, sender: 'user' as const };
+    setMessages([userMessage]);
     setAvatarStatus('thinking');
 
     // Mock AI response
@@ -105,14 +101,12 @@ export default function Home() {
       }
     }
 
-    setMessages((prev) => [
-      ...prev,
-      {
-        id: crypto.randomUUID(),
-        text: responseText,
-        sender: 'ai',
-      },
-    ]);
+    const aiMessage = {
+      id: crypto.randomUUID(),
+      text: responseText,
+      sender: 'ai' as const,
+    };
+    setMessages([userMessage, aiMessage]);
     await speak(responseText);
   };
 

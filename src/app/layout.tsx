@@ -3,7 +3,7 @@ import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 
 export const metadata: Metadata = {
-  title: 'LlamaIA',
+  title: 'PisqAI',
   description: 'A futuristic conversational AI assistant',
 };
 

@@ -60,7 +60,7 @@ export default function ChatInterface({
               {message.sender === 'ai' && (
                 <Avatar className="w-8 h-8 border border-primary/50">
                   <AvatarFallback className="bg-transparent text-primary text-xs">
-                    L
+                    P
                   </AvatarFallback>
                 </Avatar>
               )}
@@ -87,7 +87,7 @@ export default function ChatInterface({
             <div className="flex items-start gap-3">
               <Avatar className="w-8 h-8 border border-primary/50">
                 <AvatarFallback className="bg-transparent text-primary text-xs">
-                  L
+                  P
                 </AvatarFallback>
               </Avatar>
               <div className="bg-white/5 rounded-lg p-3 flex items-center space-x-2">
@@ -107,7 +107,7 @@ export default function ChatInterface({
         <Input
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
-          placeholder="Ask LlamaIA anything..."
+          placeholder="Ask PisqAI anything..."
           className="h-12 bg-black/20 border-white/10 rounded-full pl-6 pr-16 text-base focus-visible:ring-primary/50 backdrop-blur-sm"
           disabled={loading}
         />
