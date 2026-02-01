@@ -16,6 +16,11 @@ const responses: Record<string, string[]> = {
     '¡Hola amigo! ¿En qué puedo ayudarte?',
     '¡Hola! ¿Cómo te va el día?',
   ],
+  'como te llamas': [
+    'Mi nombre es PisqAI, ¡un gusto conocerte!',
+    'Soy PisqAI, tu asistente virtual.',
+    'Puedes llamarme PisqAI.'
+  ],
   adiós: [
     '¡Adiós! Que tengas un buen día',
     '¡Adiós! Hasta luego',
@@ -44,11 +49,12 @@ const responses: Record<string, string[]> = {
 
 const getResponse = (text: string) => {
   const cleanText = text.toLowerCase().replace(/[.,!?;:]/g, '');
-  const words = cleanText.split(' ');
   
-  for (const word of words) {
-    if (responses[word]) {
-      const responseList = responses[word];
+  const sortedPhrases = Object.keys(responses).sort((a, b) => b.length - a.length);
+
+  for (const phrase of sortedPhrases) {
+    if (cleanText.includes(phrase)) {
+      const responseList = responses[phrase];
       return responseList[Math.floor(Math.random() * responseList.length)];
     }
   }
