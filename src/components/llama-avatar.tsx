@@ -1,5 +1,6 @@
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
+import FireAnimation from './fire-animation';
 
 type LlamaAvatarProps = {
   status: 'idle' | 'thinking' | 'speaking' | 'listening';
@@ -10,7 +11,7 @@ export default function LlamaAvatar({ status, className }: LlamaAvatarProps) {
   return (
     <div
       className={cn(
-        'relative w-64 h-64 md:w-96 md:h-96 flex items-center justify-center', // Increased size
+        'relative w-64 h-64 md:w-96 md:h-96 flex items-center justify-center',
         className
       )}
     >
@@ -33,6 +34,12 @@ export default function LlamaAvatar({ status, className }: LlamaAvatarProps) {
           status === 'listening' && 'animate-pulse scale-110 opacity-70',
           status !== 'thinking' && status !== 'listening' && 'scale-75 opacity-0'
         )}
+      />
+
+      {/* Fire Animation - Behind the Llama */}
+      <FireAnimation
+        isSpeaking={status === 'speaking'}
+        className="bottom-[-20%] md:bottom-[-25%] z-0"
       />
 
       {/* Llama Image */}
