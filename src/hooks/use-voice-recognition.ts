@@ -29,6 +29,11 @@ const responses: Record<string, string[]> = {
     'Es un placer ayudarte',
     'No hay de qué',
   ],
+  allillanchu: [
+    'Si todo bien',
+    'si todo bien',
+    'si todo bien',
+  ],
   si: ['Entendido', 'Muy bien', 'Perfecto'],
   no: ['Ok, como prefieras', 'Entiendo', 'Sin problema'],
 };

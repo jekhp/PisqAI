@@ -96,7 +96,17 @@ export default function Home() {
     // Mock AI response
     await new Promise((res) => setTimeout(res, 1000));
 
-    const responseText = 'Esta es una respuesta simulada para la entrada de texto.';
+    const words = text.toLowerCase().replace(/[.,!?;:]/g, '').split(' ');
+    let responseText = `No entendí tu mensaje. Prueba con palabras como 'hola', 'adios', 'ayuda', etc.`;
+
+    for (const word of words) {
+      const potentialResponse = getResponse(word);
+      if (!potentialResponse.startsWith('Detecté "')) {
+        responseText = potentialResponse;
+        break;
+      }
+    }
+
     setMessages((prev) => [
       ...prev,
       {
