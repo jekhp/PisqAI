@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 
 import ChatInterface, { type Message } from '@/components/chat-interface';
 import FloatingControls from '@/components/floating-controls';
@@ -135,7 +135,7 @@ export default function Home() {
       <ParticleBackground />
 
       <main className="h-full flex flex-col">
-        <div className="flex-1 flex items-center justify-center -mt-24 md:-mt-16">
+        <div className="flex-1 flex items-center justify-center -mt-24 md:-mt-32">
           <LlamaAvatar status={avatarStatus} />
         </div>
 
