@@ -1,6 +1,5 @@
 'use client';
 
-import { useState } from 'react';
 import { Mic } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -12,18 +11,34 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 
-export default function FloatingControls() {
-  const [isListening, setIsListening] = useState(false);
+type FloatingControlsProps = {
+  isListening: boolean;
+  startListening: () => void;
+  stopListening: () => void;
+};
+
+export default function FloatingControls({
+  isListening,
+  startListening,
+  stopListening,
+}: FloatingControlsProps) {
+  const handleMicClick = () => {
+    if (isListening) {
+      stopListening();
+    } else {
+      startListening();
+    }
+  };
 
   return (
-    <div className="fixed bottom-6 right-6 z-20 flex flex-col items-center gap-4">
+    <div className="fixed bottom-24 right-6 z-20 flex flex-col items-center gap-4 md:bottom-6">
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
               size="icon"
               className="w-16 h-16 rounded-full bg-primary text-primary-foreground shadow-lg transition-all duration-300 hover:scale-110 hover:bg-primary/90 focus-visible:ring-primary"
-              onClick={() => setIsListening(!isListening)}
+              onClick={handleMicClick}
             >
               <div
                 className={cn(
@@ -35,7 +50,7 @@ export default function FloatingControls() {
             </Button>
           </TooltipTrigger>
           <TooltipContent side="left">
-            <p>{isListening ? 'Stop Listening' : 'Start Listening'}</p>
+            <p>{isListening ? 'Detener Escucha' : 'Iniciar Escucha'}</p>
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>

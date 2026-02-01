@@ -1,7 +1,7 @@
 import { cn } from '@/lib/utils';
 
 type LlamaAvatarProps = {
-  status: 'idle' | 'thinking' | 'speaking';
+  status: 'idle' | 'thinking' | 'speaking' | 'listening';
   className?: string;
 };
 
@@ -16,14 +16,16 @@ export default function LlamaAvatar({ status, className }: LlamaAvatarProps) {
       <div
         className={cn(
           'absolute inset-0 rounded-full bg-primary/10 transition-all duration-500',
-          status === 'thinking' ? 'animate-pulse scale-100' : 'scale-75 opacity-0'
+          status === 'thinking' && 'animate-pulse scale-100',
+          status === 'listening' && 'animate-pulse scale-110 opacity-70',
+          status !== 'thinking' && status !== 'listening' && 'scale-75 opacity-0'
         )}
       />
       <svg
         viewBox="0 0 100 100"
         className={cn(
           'w-full h-full transition-transform duration-500 z-10',
-          status === 'thinking' && 'scale-105'
+          (status === 'thinking' || status === 'speaking') && 'scale-105'
         )}
       >
         <defs>
@@ -78,8 +80,10 @@ export default function LlamaAvatar({ status, className }: LlamaAvatarProps) {
           fill="none"
           className={cn(
             'transition-all duration-500',
-            status === 'thinking' && 'filter-[url(#glow)]',
-            status === 'speaking' && 'filter-[url(#glow)]'
+            (status === 'thinking' ||
+              status === 'speaking' ||
+              status === 'listening') &&
+              'filter-[url(#glow)]'
           )}
         />
       </svg>
