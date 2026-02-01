@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import { cn } from '@/lib/utils';
 
 type LlamaAvatarProps = {
@@ -6,24 +7,6 @@ type LlamaAvatarProps = {
 };
 
 export default function LlamaAvatar({ status, className }: LlamaAvatarProps) {
-  const getStatusStyles = () => {
-    switch (status) {
-      case 'speaking':
-        // Anima la segunda fila de la hoja de sprites (cuadros para hablar)
-        return 'animate-speak-sprite [background-position:-32px_-341px]';
-      case 'listening':
-        // Usa el tercer cuadro de la primera fila
-        return '[background-position:-800px_0px]';
-      case 'thinking':
-        // Usa el primer cuadro de la tercera fila
-        return '[background-position:-32px_-682px]';
-      case 'idle':
-      default:
-        // Usa el primer cuadro de la primera fila
-        return '[background-position:-32px_0px]';
-    }
-  };
-
   return (
     <div
       className={cn(
@@ -41,16 +24,17 @@ export default function LlamaAvatar({ status, className }: LlamaAvatarProps) {
       />
       <div
         className={cn(
-          'w-[384px] h-[341px] scale-[0.6] md:scale-[0.75] origin-center bg-no-repeat',
-          'transition-transform duration-500 z-10',
-          (status === 'thinking' || status === 'speaking') && 'scale-[0.65] md:scale-[0.8]',
-          getStatusStyles()
+          'relative w-full h-full transition-transform duration-300 z-10',
+          (status === 'thinking' || status === 'speaking') && 'scale-105' // A slight zoom effect when active
         )}
-        style={{
-          backgroundImage: 'url(/llama-sprite.png)',
-          backgroundSize: '1536px 1024px',
-        }}
-      ></div>
+      >
+        <Image
+          src="/llama.png"
+          alt="Llama Avatar"
+          fill
+          className="object-contain"
+        />
+      </div>
     </div>
   );
 }
