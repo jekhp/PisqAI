@@ -1,10 +1,9 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 import ChatInterface, { type Message } from '@/components/chat-interface';
 import FloatingControls from '@/components/floating-controls';
-import LlamaAvatar from '@/components/llama-avatar';
 import ParticleBackground from '@/components/particle-background';
 import { useSpeechRecognition } from '@/hooks/use-speech-recognition';
 
@@ -64,13 +63,7 @@ const getResponse = (text: string) => {
 
 
 export default function Home() {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: '1',
-      sender: 'ai',
-      text: "¡Hola! Soy PisqAI. Presiona el micrófono para hablar conmigo.",
-    },
-  ]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [avatarStatus, setAvatarStatus] = useState<
     'idle' | 'thinking' | 'speaking' | 'listening'
   >('idle');
@@ -106,20 +99,21 @@ export default function Home() {
   const processAndRespond = useCallback(async (text: string) => {
     if (avatarStatus === 'thinking' || avatarStatus === 'speaking') return;
 
-    const userMessage = { id: crypto.randomUUID(), text, sender: 'user' as const };
-    setMessages([userMessage]);
+    const userMessage: Message = { id: crypto.randomUUID(), text, sender: 'user' as const, timestamp: new Date() };
+    setMessages(prev => [...prev, userMessage]);
     setAvatarStatus('thinking');
 
     await new Promise((res) => setTimeout(res, 1000));
 
     const responseText = getResponse(text);
 
-    const aiMessage = {
+    const aiMessage: Message = {
       id: crypto.randomUUID(),
       text: responseText,
       sender: 'ai' as const,
+      timestamp: new Date()
     };
-    setMessages([userMessage, aiMessage]);
+    setMessages(prev => [...prev, aiMessage]);
     await speak(responseText);
   }, [avatarStatus, speak]);
   
@@ -140,18 +134,13 @@ export default function Home() {
     <div className="relative h-screen w-full overflow-hidden">
       <ParticleBackground />
 
-      <main className="h-full flex flex-col">
-        <div className="flex-1 flex items-center justify-center -mt-24 md:-mt-32">
-          <LlamaAvatar status={avatarStatus} />
-        </div>
-
-        <div className="px-4 pb-4">
+      <main className="h-full flex items-center justify-center p-4">
           <ChatInterface
             messages={messages}
             loading={avatarStatus === 'thinking'}
             sendMessage={processAndRespond}
+            aiStatus={avatarStatus}
           />
-        </div>
       </main>
 
       <FloatingControls
