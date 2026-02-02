@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 
 import ChatInterface, { type Message } from '@/components/chat-interface';
 import FloatingControls from '@/components/floating-controls';
@@ -20,7 +20,16 @@ const responses: Record<string, string[]> = {
     'Soy PisqAI, tu asistente virtual.',
     'Puedes llamarme PisqAI.',
   ],
-  'página oficial': [
+  'cuál es tu nombre': [
+    'Mi nombre es PisqAI, ¡un gusto conocerte!',
+    'Soy PisqAI, tu asistente virtual.',
+    'Puedes llamarme PisqAI.',
+  ],
+  'iman sutiyki': [
+    'Mi nombre es PisqAI, ¡un gusto conocerte!',
+    'Soy PisqAI, tu asistente virtual.',
+  ],
+  'página web': [
     "¡Claro que sí! Tengo más páginas web que un libro de historia. Aquí tienes mis cuarteles generales en la red:\n\nPágina Principal: www.tukuypanpaq.com\nCusco Fest: www.cuscofest.com\nQuechua Quick: www.quechuaquick.com\n\n¡Navega con sabiduría, amigo explorador!"
   ],
   'sitio web': [
@@ -38,8 +47,20 @@ const responses: Record<string, string[]> = {
   'pastoreo de ovejas': [
     "¿Siempre soñaste con ser el líder de un rebaño con mucho estilo? ¡Esta es tu oportunidad! En nuestro pastoreo de ovejas, aprenderás a guiar a las ovejas más esponjosas y simpáticas de los Andes. ¡Es como ser un CEO, pero con más lana y menos reuniones aburridas!"
   ],
-  'pacha manca': [
-    "¡La pacha manca es cocinar a lo grande! Usamos piedras calientes y enterramos la comida bajo tierra. Es como un spa para la comida, ¡y sale tan deliciosa que querrás pedirle matrimonio al chef! Aprenderás los secretos de esta técnica ancestral y sorprenderás a todos en casa."
+  'significa piscay': [
+    "Mi nombre PisqAI (pronunciado 'piscay') viene de 'Pisqa', que es el número cinco en quechua, y la palabra 'AI' por Inteligencia Artificial. ¡Una mezcla de tradición y futuro!"
+  ],
+  'significa biscay': [
+    "Mi nombre PisqAI (pronunciado 'piscay') viene de 'Pisqa', que es el número cinco en quechua, y la palabra 'AI' por Inteligencia Artificial. ¡Una mezcla de tradición y futuro!"
+  ],
+  'significa viscay': [
+    "Mi nombre PisqAI (pronunciado 'piscay') viene de 'Pisqa', que es el número cinco en quechua, y la palabra 'AI' por Inteligencia Artificial. ¡Una mezcla de tradición y futuro!"
+  ],
+  pachamanca: [
+    "¡La pachamanca es cocinar a lo grande! Usamos piedras calientes y enterramos la comida bajo tierra. Es como un spa para la comida, ¡y sale tan deliciosa que querrás pedirle matrimonio al chef! Aprenderás los secretos de esta técnica ancestral y sorprenderás a todos en casa."
+  ],
+  'qué ofreces': [
+    "¡Por supuesto! Estoy hasta las orejas de servicios geniales. Te ofrezco una experiencia de turismo vivencial inolvidable. ¿Qué te apetece? Tenemos Taller Textil para que tejas tu propio destino, Camping para que cuentes estrellas en lugar de ovejas (aunque también tenemos Pastoreo de Ovejas), un Desayuno Andino para empezar el día con fuerza, y hasta un taller de cocina Pacha Manca para que saques el chef inca que llevas dentro. ¡Dime cuál te interesa y te cuento más!"
   ],
   servicios: [
     "¡Por supuesto! Estoy hasta las orejas de servicios geniales. Te ofrezco una experiencia de turismo vivencial inolvidable. ¿Qué te apetece? Tenemos Taller Textil para que tejas tu propio destino, Camping para que cuentes estrellas en lugar de ovejas (aunque también tenemos Pastoreo de Ovejas), un Desayuno Andino para empezar el día con fuerza, y hasta un taller de cocina Pacha Manca para que saques el chef inca que llevas dentro. ¡Dime cuál te interesa y te cuento más!"
@@ -61,7 +82,10 @@ const responses: Record<string, string[]> = {
     'Es un placer ayudarte',
     'No hay de qué',
   ],
-  allillanchu: ['Si todo bien', 'si todo bien', 'si todo bien'],
+  allillanchu: ['Allinllam, ¿qamrí?', '¡Allinlla! Contento de hablar contigo.', 'Todo bien, gracias por preguntar.'],
+  piscay: ['Si señor, a sus ordenes', 'Ah, ese soy yo, ¿sí?', '¿Sí? se le ofrece algo'],
+  biscay: ['Si señor, a sus ordenes', 'Ah, ese soy yo, ¿sí?', '¿Sí? se le ofrece algo'],
+  viscay: ['Si señor, a sus ordenes', 'Ah, ese soy yo, ¿sí?', '¿Sí? se le ofrece algo'],
   si: ['Entendido', 'Muy bien', 'Perfecto'],
   no: ['Ok, como prefieras', 'Entiendo', 'Sin problema'],
 };
@@ -74,7 +98,7 @@ const getResponse = (text: string) => {
   );
 
   for (const phrase of sortedPhrases) {
-    if (cleanText.includes(phrase)) {
+    if (cleanText.includes(phrase.toLowerCase())) {
       const responseList = responses[phrase];
       return responseList[Math.floor(Math.random() * responseList.length)];
     }
@@ -123,21 +147,18 @@ export default function Home() {
       utterance.onerror = (e) => {
         console.error('An error occurred during speech synthesis: ', e);
         setAvatarStatus('idle');
-        reject(e); // Reject the promise on error
+        reject(e);
       };
 
       const doSpeak = () => {
-        // If there's something speaking or pending, cancel it.
         if (speechSynthesis.speaking) {
           speechSynthesis.cancel();
-          // Give a moment for cancel to take effect before speaking again
           setTimeout(() => speechSynthesis.speak(utterance), 100);
         } else {
           speechSynthesis.speak(utterance);
         }
       };
-
-      // Ensure voices are loaded before speaking
+      
       if (speechSynthesis.getVoices().length > 0) {
         doSpeak();
       } else {
@@ -151,7 +172,7 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    const styles = [...Array(30)].map(() => ({
+    const styles = Array.from({ length: 30 }, () => ({
       left: `${Math.random() * 100}%`,
       top: `${Math.random() * 100}%`,
       animationDelay: `${Math.random() * 5}s`,
@@ -182,7 +203,7 @@ export default function Home() {
         sender: 'ai' as const,
       };
       
-      setMessages((prev) => [...prev, aiMessage]);
+      setMessages((prev) => [userMessage, aiMessage]);
 
       try {
         await speak(responseText);
