@@ -11,52 +11,90 @@ export default function LlamaAvatar({ status, className }: LlamaAvatarProps) {
   return (
     <div
       className={cn(
-        'relative w-64 h-64 md:w-96 md:h-96 flex items-center justify-center',
+        'relative w-full max-w-2xl mx-auto flex items-center justify-center',
+        'min-h-[500px] md:min-h-[700px]',
         className
       )}
     >
-      {/* Bottom Glow Effect */}
       <div
         className={cn(
-          'absolute bottom-[15%] w-[150%] h-[70%] bg-primary/10 blur-3xl rounded-[50%] transition-all duration-500',
-          'after:absolute after:inset-0 after:bg-accent/10 after:rounded-[50%] after:-translate-x-8',
+          'absolute bottom-[10%] w-[200%] h-[80%]',
+          'bg-gradient-to-t from-primary/30 via-primary/15 to-transparent',
+          'blur-3xl rounded-[50%] transition-all duration-500',
+          'after:absolute after:inset-0 after:bg-accent/20 after:rounded-[50%]',
           (status === 'listening' || status === 'speaking' || status === 'thinking')
             ? 'opacity-100 scale-100'
-            : 'opacity-0 scale-75'
+            : 'opacity-40 scale-90'
         )}
       />
 
-      {/* Pulse effect */}
       <div
         className={cn(
-          'absolute inset-0 rounded-full bg-primary/5 transition-all duration-500',
-          status === 'thinking' && 'animate-pulse scale-100',
-          status === 'listening' && 'animate-pulse scale-110 opacity-70',
-          status !== 'thinking' && status !== 'listening' && 'scale-75 opacity-0'
+          'absolute inset-0 rounded-full',
+          'bg-gradient-radial from-primary/30 via-primary/10 to-transparent',
+          'transition-all duration-700',
+          status === 'thinking' && 'animate-pulse scale-125',
+          status === 'listening' && 'animate-pulse scale-135 opacity-80',
+          status === 'speaking' && 'animate-pulse scale-130 opacity-60',
+          status !== 'thinking' && status !== 'listening' && 'scale-100 opacity-30'
         )}
       />
 
-      {/* Fire Animation - Behind the Llama */}
       <FireAnimation
         isSpeaking={status === 'speaking'}
-        className="bottom-[-20%] md:bottom-[-25%] z-0"
+        className="absolute bottom-[-10%] w-full h-[300px] md:h-[400px]"
       />
 
-      {/* Llama Image */}
       <div
         className={cn(
-          'relative w-full h-full transition-transform duration-300 z-10',
-          (status === 'thinking' || status === 'speaking') && 'scale-105'
+          'relative w-[80vw] h-[80vw] max-w-[600px] max-h-[600px]',
+          'md:w-[70vw] md:h-[70vw]',
+          'transition-all duration-500 z-20',
+          'flex items-center justify-center',
+          status === 'thinking' && 'scale-110 animate-float',
+          status === 'speaking' && 'scale-105',
+          status === 'listening' && 'scale-108'
         )}
       >
+        <div
+          className={cn(
+            'absolute inset-0 rounded-full',
+            'bg-gradient-radial from-primary/20 via-transparent to-transparent',
+            'transition-all duration-500',
+            (status === 'speaking' || status === 'thinking') && 'scale-125 opacity-70'
+          )}
+        />
+        
         <Image
           src="/llama.png"
           alt="Llama Avatar"
           fill
-          sizes="(max-width: 768px) 16rem, 24rem"
+          sizes="(max-width: 768px) 80vw, 600px"
           priority
-          className="object-contain"
+          className="object-contain drop-shadow-2xl"
+          style={{
+            filter: 'drop-shadow(0 20px 40px rgba(0, 168, 255, 0.3))'
+          }}
         />
+      </div>
+
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {[...Array(20)].map((_, i) => (
+          <div
+            key={i}
+            className={cn(
+              'absolute w-1 h-1 rounded-full bg-primary/30',
+              'animate-float-slow',
+              status === 'speaking' && 'animate-pulse'
+            )}
+            style={{
+              left: `${Math.random() * 100}%`,
+              top: `${Math.random() * 100}%`,
+              animationDelay: `${i * 0.1}s`,
+              animationDuration: `${3 + Math.random() * 4}s`
+            }}
+          />
+        ))}
       </div>
     </div>
   );

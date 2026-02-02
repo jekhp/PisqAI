@@ -42,11 +42,10 @@ export default function ChatInterface({
   }, [messages]);
 
   return (
-    <div className="w-full max-w-4xl mx-auto flex flex-col gap-4">
+    <div className="w-full max-w-2xl mx-auto flex flex-col gap-6 mt-4">
       <ScrollArea
         ref={scrollAreaRef}
-        className="h-64 w-full pr-4"
-        // style={{ maskImage: 'linear-gradient(to top, transparent, black 20%)' }}
+        className="h-72 w-full pr-4"
       >
         <div className="flex flex-col gap-4">
           {messages.map((message) => (
@@ -58,25 +57,26 @@ export default function ChatInterface({
               )}
             >
               {message.sender === 'ai' && (
-                <Avatar className="w-8 h-8 border border-primary/50">
-                  <AvatarFallback className="bg-transparent text-primary text-xs">
-                    P
+                <Avatar className="w-10 h-10 border-2 border-primary/60">
+                  <AvatarFallback className="bg-gradient-to-br from-primary/20 to-primary/10 text-primary">
+                    AI
                   </AvatarFallback>
                 </Avatar>
               )}
               <div
                 className={cn(
-                  'max-w-[75%] rounded-lg p-3 text-sm',
+                  'max-w-[80%] rounded-2xl p-4 text-base',
+                  'backdrop-blur-sm border',
                   message.sender === 'user'
-                    ? 'bg-primary/90 text-primary-foreground'
-                    : 'bg-white/5'
+                    ? 'bg-gradient-to-r from-primary/90 to-primary/70 text-primary-foreground border-primary/50'
+                    : 'bg-white/10 border-white/20'
                 )}
               >
-                <p>{message.text}</p>
+                <p className="leading-relaxed">{message.text}</p>
               </div>
               {message.sender === 'user' && (
-                <Avatar className="w-8 h-8 border border-accent/50">
-                  <AvatarFallback className="bg-transparent text-accent text-xs">
+                <Avatar className="w-10 h-10 border-2 border-accent/60">
+                  <AvatarFallback className="bg-gradient-to-br from-accent/20 to-accent/10 text-accent">
                     U
                   </AvatarFallback>
                 </Avatar>
@@ -85,15 +85,17 @@ export default function ChatInterface({
           ))}
           {loading && (
             <div className="flex items-start gap-3">
-              <Avatar className="w-8 h-8 border border-primary/50">
-                <AvatarFallback className="bg-transparent text-primary text-xs">
-                  P
+              <Avatar className="w-10 h-10 border-2 border-primary/60 animate-pulse">
+                <AvatarFallback className="bg-gradient-to-br from-primary/20 to-primary/10 text-primary">
+                  AI
                 </AvatarFallback>
               </Avatar>
-              <div className="bg-white/5 rounded-lg p-3 flex items-center space-x-2">
-                <span className="h-2 w-2 bg-primary rounded-full animate-pulse [animation-delay:-0.3s]" />
-                <span className="h-2 w-2 bg-primary rounded-full animate-pulse [animation-delay:-0.15s]" />
-                <span className="h-2 w-2 bg-primary rounded-full animate-pulse" />
+              <div className="bg-white/10 rounded-2xl p-4 border border-white/20 backdrop-blur-sm">
+                <div className="flex items-center space-x-2">
+                  <span className="h-2.5 w-2.5 bg-primary rounded-full animate-pulse [animation-delay:-0.3s]" />
+                  <span className="h-2.5 w-2.5 bg-primary rounded-full animate-pulse [animation-delay:-0.15s]" />
+                  <span className="h-2.5 w-2.5 bg-primary rounded-full animate-pulse" />
+                </div>
               </div>
             </div>
           )}
@@ -108,16 +110,16 @@ export default function ChatInterface({
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
           placeholder="Ask PisqAI anything..."
-          className="h-12 bg-black/20 border-white/10 rounded-full pl-6 pr-16 text-base focus-visible:ring-primary/50 backdrop-blur-sm"
+          className="h-14 bg-black/40 border-2 border-primary/30 rounded-2xl pl-6 pr-20 text-base focus-visible:ring-2 focus-visible:ring-primary/70 backdrop-blur-md transition-all"
           disabled={loading}
         />
         <Button
           type="submit"
           size="icon"
-          className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-primary hover:bg-primary/90"
+          className="absolute right-2 top-1/2 -translate-y-1/2 w-12 h-12 rounded-xl bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg"
           disabled={loading || !inputValue.trim()}
         >
-          <Send className="w-5 h-5 text-primary-foreground" />
+          <Send className="w-6 h-6 text-primary-foreground" />
           <span className="sr-only">Send message</span>
         </Button>
       </form>

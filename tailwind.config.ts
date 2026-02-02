@@ -91,11 +91,25 @@ export default {
             height: '0',
           },
         },
+        float: {
+          '0%, 100%': { transform: 'translateY(0px)' },
+          '50%': { transform: 'translateY(-20px)' },
+        },
+        twinkle: {
+          '0%, 100%': { opacity: '0.2' },
+          '50%': { opacity: '1' },
+        }
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
+        'float': 'float 6s ease-in-out infinite',
+        'float-slow': 'float 8s ease-in-out infinite',
+        'twinkle': 'twinkle 2s ease-in-out infinite',
       },
+      backdropBlur: {
+        xs: '2px',
+      }
     },
   },
   plugins: [require('tailwindcss-animate')],
