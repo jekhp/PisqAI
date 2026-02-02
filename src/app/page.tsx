@@ -92,20 +92,43 @@ const responses: Record<string, string[]> = {
 
 const getResponse = (text: string) => {
   const cleanText = text.toLowerCase().replace(/[.,!?;:]/g, '');
+  const inputWords = new Set(cleanText.split(/\s+/).filter(Boolean));
 
-  const sortedPhrases = Object.keys(responses).sort(
-    (a, b) => b.length - a.length
-  );
+  let bestMatch = '';
+  let maxScore = 0;
 
-  for (const phrase of sortedPhrases) {
-    if (cleanText.includes(phrase.toLowerCase())) {
-      const responseList = responses[phrase];
-      return responseList[Math.floor(Math.random() * responseList.length)];
+  for (const phrase of Object.keys(responses)) {
+    const phraseWords = phrase.toLowerCase().split(/\s+/).filter(Boolean);
+    let currentScore = 0;
+
+    for (const word of phraseWords) {
+      if (inputWords.has(word)) {
+        currentScore++;
+      }
     }
+
+    if (currentScore === 0) continue;
+
+    // A better match has more matching words.
+    // If scores are equal, the longer phrase (more specific) wins.
+    if (currentScore > maxScore) {
+      maxScore = currentScore;
+      bestMatch = phrase;
+    } else if (currentScore === maxScore) {
+      if (phrase.length > bestMatch.length) {
+        bestMatch = phrase;
+      }
+    }
+  }
+
+  if (bestMatch) {
+    const responseList = responses[bestMatch];
+    return responseList[Math.floor(Math.random() * responseList.length)];
   }
 
   return `No entendí tu mensaje. Prueba con palabras como 'hola', 'adios', 'ayuda', 'servicios', etc.`;
 };
+
 
 type TwinkleStyle = {
   left: string;
@@ -163,10 +186,8 @@ export default function Home() {
         doSpeak();
       } else {
         speechSynthesis.onvoiceschanged = () => {
-          speechSynthesis.onvoiceschanged = null;
           doSpeak();
         };
-        speechSynthesis.getVoices();
       }
     });
   }, []);
