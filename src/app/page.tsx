@@ -171,7 +171,7 @@ export default function Home() {
       };
 
       setAvatarStatus('thinking');
-      setMessages((prev) => [...prev, userMessage]);
+      setMessages([userMessage]);
       await new Promise((res) => setTimeout(res, 1000));
 
       const responseText = getResponse(text);
@@ -182,9 +182,13 @@ export default function Home() {
         sender: 'ai' as const,
       };
       
-      await speak(responseText);
       setMessages((prev) => [...prev, aiMessage]);
 
+      try {
+        await speak(responseText);
+      } catch(e) {
+        console.error("Speech failed to play.", e);
+      }
     },
     [avatarStatus, speak]
   );
