@@ -59,11 +59,19 @@ const getResponse = (text: string) => {
   return `No entendí tu mensaje. Prueba con palabras como 'hola', 'adios', 'ayuda', etc.`;
 };
 
+type TwinkleStyle = {
+  left: string;
+  top: string;
+  animationDelay: string;
+  animationDuration: string;
+};
+
 export default function Home() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [avatarStatus, setAvatarStatus] = useState<
     'idle' | 'thinking' | 'speaking' | 'listening'
   >('idle');
+  const [twinkleStyles, setTwinkleStyles] = useState<TwinkleStyle[]>([]);
 
   const speak = useCallback((text: string) => {
     return new Promise<void>((resolve) => {
@@ -114,6 +122,17 @@ export default function Home() {
       return () => clearTimeout(timer);
     }
   }, [speak]);
+  
+  useEffect(() => {
+    const styles = [...Array(30)].map(() => ({
+      left: `${Math.random() * 100}%`,
+      top: `${Math.random() * 100}%`,
+      animationDelay: `${Math.random() * 5}s`,
+      animationDuration: `${2 + Math.random() * 3}s`,
+    }));
+    setTwinkleStyles(styles);
+  }, []);
+
 
   const processAndRespond = useCallback(
     async (text: string) => {
@@ -182,16 +201,11 @@ export default function Home() {
       />
 
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {[...Array(30)].map((_, i) => (
+        {twinkleStyles.map((style, i) => (
           <div
             key={i}
             className="absolute w-[1px] h-[1px] bg-primary/20 rounded-full animate-twinkle"
-            style={{
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-              animationDelay: `${Math.random() * 5}s`,
-              animationDuration: `${2 + Math.random() * 3}s`
-            }}
+            style={style}
           />
         ))}
       </div>

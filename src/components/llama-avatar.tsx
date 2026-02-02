@@ -1,3 +1,6 @@
+'use client';
+
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import FireAnimation from './fire-animation';
@@ -7,7 +10,27 @@ type LlamaAvatarProps = {
   className?: string;
 };
 
+type ParticleStyle = {
+  left: string;
+  top: string;
+  animationDelay: string;
+  animationDuration: string;
+};
+
+
 export default function LlamaAvatar({ status, className }: LlamaAvatarProps) {
+  const [particleStyles, setParticleStyles] = useState<ParticleStyle[]>([]);
+
+  useEffect(() => {
+    const styles = [...Array(20)].map((_, i) => ({
+      left: `${Math.random() * 100}%`,
+      top: `${Math.random() * 100}%`,
+      animationDelay: `${i * 0.1}s`,
+      animationDuration: `${3 + Math.random() * 4}s`,
+    }));
+    setParticleStyles(styles);
+  }, []);
+
   return (
     <div
       className={cn(
@@ -79,7 +102,7 @@ export default function LlamaAvatar({ status, className }: LlamaAvatarProps) {
       </div>
 
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {[...Array(20)].map((_, i) => (
+        {particleStyles.map((style, i) => (
           <div
             key={i}
             className={cn(
@@ -87,12 +110,7 @@ export default function LlamaAvatar({ status, className }: LlamaAvatarProps) {
               'animate-float-slow',
               status === 'speaking' && 'animate-pulse'
             )}
-            style={{
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-              animationDelay: `${i * 0.1}s`,
-              animationDuration: `${3 + Math.random() * 4}s`
-            }}
+            style={style}
           />
         ))}
       </div>
