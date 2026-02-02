@@ -42,10 +42,10 @@ export default function ChatInterface({
   }, [messages]);
 
   return (
-    <div className="w-full max-w-2xl mx-auto flex flex-col gap-6 mt-4">
+    <div className="w-full max-w-2xl mx-auto flex flex-col gap-6">
       <ScrollArea
         ref={scrollAreaRef}
-        className="h-72 w-full pr-4"
+        className="h-64 w-full pr-4"
       >
         <div className="flex flex-col gap-4">
           {messages.map((message) => (

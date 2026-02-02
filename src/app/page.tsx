@@ -75,6 +75,11 @@ export default function Home() {
 
   const speak = useCallback((text: string) => {
     return new Promise<void>((resolve) => {
+      if (!('speechSynthesis' in window)) {
+        console.error("Browser doesn't support speech synthesis.");
+        resolve();
+        return;
+      }
       speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.lang = 'es-ES';
@@ -89,38 +94,40 @@ export default function Home() {
         setAvatarStatus('idle');
         resolve();
       };
-      utterance.onerror = () => {
+      utterance.onerror = (e) => {
+        console.error('An error occurred during speech synthesis: ', e);
         setAvatarStatus('idle');
         resolve();
       };
 
-      speechSynthesis.speak(utterance);
+      try {
+        speechSynthesis.speak(utterance);
+      } catch (e) {
+        console.error('Could not speak:', e);
+        setAvatarStatus('idle');
+        resolve();
+      }
     });
   }, []);
-  
-  useEffect(() => {
-    const hasWelcomed = localStorage.getItem('hasWelcomed');
-  
-    if (!hasWelcomed) {
-      const welcomeMessage = "Bienvenido a Tukuy Yanpaq, mi nombre es PisqAI. Estoy aquí para ayudarte en lo que necesites. ¿En qué puedo asistirte hoy?";
-      
-      const timer = setTimeout(async () => {
-        setAvatarStatus('speaking');
-        await speak(welcomeMessage);
-        setAvatarStatus('idle');
-        
-        const welcomeChatMessage: Message = {
-          id: crypto.randomUUID(),
-          text: welcomeMessage,
-          sender: 'ai' as const,
-        };
-        setMessages([welcomeChatMessage]);
-        
-        localStorage.setItem('hasWelcomed', 'true');
-      }, 1000);
 
-      return () => clearTimeout(timer);
-    }
+  useEffect(() => {
+    const welcomeMessage = "Bienvenido a Tukuy Yanpaq, mi nombre es PisqAI. Estoy aquí para ayudarte en lo que necesites. ¿En qué puedo asistirte hoy?";
+    
+    const timer = setTimeout(async () => {
+      if (messages.length > 0) return;
+
+      await speak(welcomeMessage);
+      
+      const welcomeChatMessage: Message = {
+        id: crypto.randomUUID(),
+        text: welcomeMessage,
+        sender: 'ai' as const,
+      };
+      setMessages([welcomeChatMessage]);
+    }, 1000);
+
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [speak]);
   
   useEffect(() => {
@@ -145,7 +152,7 @@ export default function Home() {
       };
 
       setAvatarStatus('thinking');
-
+      setMessages([userMessage]);
       await new Promise((res) => setTimeout(res, 1000));
 
       const responseText = getResponse(text);
@@ -174,18 +181,18 @@ export default function Home() {
   }, [isListening, avatarStatus]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#0A0E17] via-[#0F172A] to-[#0A0E17] relative overflow-hidden">
+    <div className="h-screen w-screen flex flex-col bg-gradient-to-b from-[#0A0E17] via-[#0F172A] to-[#0A0E17] relative overflow-hidden">
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-primary/5 via-transparent to-transparent" />
       
-      <main className="container mx-auto px-4 py-8 relative z-10">
-        <div className="flex justify-center items-center min-h-[60vh] md:min-h-[70vh]">
+      <main className="container mx-auto px-4 py-4 md:py-8 relative z-10 flex flex-col flex-1 overflow-hidden">
+        <div className="flex-1 flex justify-center items-center relative -mt-4 md:-mt-8">
           <LlamaAvatar 
             status={avatarStatus}
-            className="scale-100 md:scale-110"
+            className="scale-90 md:scale-100"
           />
         </div>
 
-        <div className="mt-8 md:mt-12">
+        <div className="flex-shrink-0">
           <ChatInterface
             messages={messages}
             loading={avatarStatus === 'thinking'}

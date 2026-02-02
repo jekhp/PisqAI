@@ -34,8 +34,7 @@ export default function LlamaAvatar({ status, className }: LlamaAvatarProps) {
   return (
     <div
       className={cn(
-        'relative w-full max-w-2xl mx-auto flex items-center justify-center',
-        'min-h-[500px] md:min-h-[700px]',
+        'relative w-full h-full flex items-center justify-center',
         className
       )}
     >
@@ -70,8 +69,7 @@ export default function LlamaAvatar({ status, className }: LlamaAvatarProps) {
 
       <div
         className={cn(
-          'relative w-[80vw] h-[80vw] max-w-[600px] max-h-[600px]',
-          'md:w-[70vw] md:h-[70vw]',
+          'relative w-full h-full max-w-[600px] max-h-[600px]',
           'transition-all duration-500 z-20',
           'flex items-center justify-center',
           status === 'thinking' && 'scale-110 animate-float',
