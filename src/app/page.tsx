@@ -20,6 +20,30 @@ const responses: Record<string, string[]> = {
     'Soy PisqAI, tu asistente virtual.',
     'Puedes llamarme PisqAI.',
   ],
+  'página oficial': [
+    "¡Claro que sí! Tengo más páginas web que un libro de historia. Aquí tienes mis cuarteles generales en la red:\n\nPágina Principal: www.tukuypanpaq.com\nCusco Fest: www.cuscofest.com\nQuechua Quick: www.quechuaquick.com\n\n¡Navega con sabiduría, amigo explorador!"
+  ],
+  'sitio web': [
+    "¡Por supuesto! Mi imperio digital se extiende por varios dominios. ¡Apunta!:\n\nPágina Principal: www.tukuypanpaq.com\nCusco Fest: www.cuscofest.com\nQuechua Quick: www.quechuaquick.com\n\n¡Que los Apus guíen tu clic!"
+  ],
+  'taller textil': [
+    "¡Ah, el taller textil! Prepárate para convertirte en un Picasso de los telares. Aprenderás de maestros artesanos que tienen más secretos que un quipu. ¡Saldrás de aquí tejiendo tu propio poncho y con más estilo que una alpaca con gafas de sol!"
+  ],
+  camping: [
+    "¿Camping? ¡Más bien 'glamping' a lo inca! Te ofrecemos una noche bajo un millón de estrellas, con historias junto a la fogata y el sonido de la naturaleza. Es tan increíble que hasta los ovnis se acercan a curiosear. ¡No te preocupes, las alpacas montan guardia!"
+  ],
+  'desayuno andino': [
+    "Nuestro desayuno andino es pura super-comida. Quinua, kiwicha, frutas frescas... ¡Es el desayuno de los campeones! Después de esto, sentirás que puedes subir al Machu Picchu corriendo... bueno, casi. ¡Es delicioso y te dará energía para todo el día!"
+  ],
+  'pastoreo de ovejas': [
+    "¿Siempre soñaste con ser el líder de un rebaño con mucho estilo? ¡Esta es tu oportunidad! En nuestro pastoreo de ovejas, aprenderás a guiar a las ovejas más esponjosas y simpáticas de los Andes. ¡Es como ser un CEO, pero con más lana y menos reuniones aburridas!"
+  ],
+  'pacha manca': [
+    "¡La pacha manca es cocinar a lo grande! Usamos piedras calientes y enterramos la comida bajo tierra. Es como un spa para la comida, ¡y sale tan deliciosa que querrás pedirle matrimonio al chef! Aprenderás los secretos de esta técnica ancestral y sorprenderás a todos en casa."
+  ],
+  servicios: [
+    "¡Por supuesto! Estoy hasta las orejas de servicios geniales. Te ofrezco una experiencia de turismo vivencial inolvidable. ¿Qué te apetece? Tenemos Taller Textil para que tejas tu propio destino, Camping para que cuentes estrellas en lugar de ovejas (aunque también tenemos Pastoreo de Ovejas), un Desayuno Andino para empezar el día con fuerza, y hasta un taller de cocina Pacha Manca para que saques el chef inca que llevas dentro. ¡Dime cuál te interesa y te cuento más!"
+  ],
   adiós: [
     '¡Adiós! Que tengas un buen día',
     '¡Adiós! Hasta luego',
@@ -56,7 +80,7 @@ const getResponse = (text: string) => {
     }
   }
 
-  return `No entendí tu mensaje. Prueba con palabras como 'hola', 'adios', 'ayuda', etc.`;
+  return `No entendí tu mensaje. Prueba con palabras como 'hola', 'adios', 'ayuda', 'servicios', etc.`;
 };
 
 type TwinkleStyle = {
@@ -125,7 +149,7 @@ export default function Home() {
       }
     });
   }, []);
-  
+
   useEffect(() => {
     const styles = [...Array(30)].map(() => ({
       left: `${Math.random() * 100}%`,
@@ -135,7 +159,6 @@ export default function Home() {
     }));
     setTwinkleStyles(styles);
   }, []);
-
 
   const processAndRespond = useCallback(
     async (text: string) => {
