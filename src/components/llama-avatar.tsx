@@ -15,32 +15,38 @@ export default function LlamaAvatar({ status, className }: LlamaAvatarProps) {
         className
       )}
     >
-      {/* Fondo base siempre visible */}
-      <div className="absolute bottom-[10%] w-[160%] h-[60%] bg-gradient-radial from-primary/10 via-primary/5 to-transparent blur-3xl rounded-[50%]" />
-
-      {/* Fire Animation - SIEMPRE VISIBLE */}
-      <FireAnimation
-        isSpeaking={status === 'speaking'}
-        alwaysVisible={true}
-        className="bottom-[-15%] md:bottom-[-20%] z-0"
-      />
-
-      {/* Efecto de pulso según estado */}
+      {/* Bottom Glow Effect */}
       <div
         className={cn(
-          'absolute inset-0 rounded-full transition-all duration-500',
-          status === 'thinking' && 'bg-primary/10 animate-pulse',
-          status === 'listening' && 'bg-green-500/10 animate-pulse',
-          status !== 'thinking' && status !== 'listening' && 'opacity-0'
+          'absolute bottom-[15%] w-[150%] h-[70%] bg-primary/10 blur-3xl rounded-[50%] transition-all duration-500',
+          'after:absolute after:inset-0 after:bg-accent/10 after:rounded-[50%] after:-translate-x-8',
+          (status === 'listening' || status === 'speaking' || status === 'thinking')
+            ? 'opacity-100 scale-100'
+            : 'opacity-0 scale-75'
         )}
       />
 
-      {/* Llama Image con efectos según estado */}
+      {/* Pulse effect */}
       <div
         className={cn(
-          'relative w-full h-full transition-all duration-500 z-10',
-          status === 'speaking' && 'animate-glow scale-105',
-          status === 'thinking' && 'animate-pulse-subtle'
+          'absolute inset-0 rounded-full bg-primary/5 transition-all duration-500',
+          status === 'thinking' && 'animate-pulse scale-100',
+          status === 'listening' && 'animate-pulse scale-110 opacity-70',
+          status !== 'thinking' && status !== 'listening' && 'scale-75 opacity-0'
+        )}
+      />
+
+      {/* Fire Animation - Behind the Llama */}
+      <FireAnimation
+        isSpeaking={status === 'speaking'}
+        className="bottom-[-20%] md:bottom-[-25%] z-0"
+      />
+
+      {/* Llama Image */}
+      <div
+        className={cn(
+          'relative w-full h-full transition-transform duration-300 z-10',
+          (status === 'thinking' || status === 'speaking') && 'scale-105'
         )}
       >
         <Image
@@ -49,12 +55,7 @@ export default function LlamaAvatar({ status, className }: LlamaAvatarProps) {
           fill
           sizes="(max-width: 768px) 16rem, 24rem"
           priority
-          className="object-contain drop-shadow-xl"
-          style={{
-            filter: status === 'speaking' 
-              ? 'brightness(1.1) saturate(1.1)' 
-              : 'brightness(1) saturate(1)'
-          }}
+          className="object-contain"
         />
       </div>
     </div>

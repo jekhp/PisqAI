@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 
 import ChatInterface, { type Message } from '@/components/chat-interface';
 import FloatingControls from '@/components/floating-controls';
+import LlamaAvatar from '@/components/llama-avatar';
 import ParticleBackground from '@/components/particle-background';
 import { useSpeechRecognition } from '@/hooks/use-speech-recognition';
 
@@ -99,8 +100,8 @@ export default function Home() {
   const processAndRespond = useCallback(async (text: string) => {
     if (avatarStatus === 'thinking' || avatarStatus === 'speaking') return;
 
-    const userMessage: Message = { id: crypto.randomUUID(), text, sender: 'user' as const, timestamp: new Date() };
-    setMessages(prev => [...prev, userMessage]);
+    const userMessage: Message = { id: crypto.randomUUID(), text, sender: 'user' as const };
+    
     setAvatarStatus('thinking');
 
     await new Promise((res) => setTimeout(res, 1000));
@@ -111,9 +112,11 @@ export default function Home() {
       id: crypto.randomUUID(),
       text: responseText,
       sender: 'ai' as const,
-      timestamp: new Date()
     };
-    setMessages(prev => [...prev, aiMessage]);
+    
+    // Replace previous messages with new ones
+    setMessages([userMessage, aiMessage]);
+
     await speak(responseText);
   }, [avatarStatus, speak]);
   
@@ -134,13 +137,13 @@ export default function Home() {
     <div className="relative h-screen w-full overflow-hidden">
       <ParticleBackground />
 
-      <main className="h-full flex items-center justify-center p-4">
-          <ChatInterface
-            messages={messages}
-            loading={avatarStatus === 'thinking'}
-            sendMessage={processAndRespond}
-            aiStatus={avatarStatus}
-          />
+      <main className="h-full flex flex-col items-center justify-center p-4">
+        <LlamaAvatar status={avatarStatus} />
+        <ChatInterface
+          messages={messages}
+          loading={avatarStatus === 'thinking'}
+          sendMessage={processAndRespond}
+        />
       </main>
 
       <FloatingControls

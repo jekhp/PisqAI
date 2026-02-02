@@ -91,24 +91,10 @@ export default {
             height: '0',
           },
         },
-        glow: {
-          '0%, 100%': { 
-            filter: 'drop-shadow(0 0 10px rgba(0, 212, 255, 0.3))',
-          },
-          '50%': { 
-            filter: 'drop-shadow(0 0 25px rgba(0, 212, 255, 0.6))',
-          },
-        },
-        'pulse-subtle': {
-          '0%, 100%': { transform: 'scale(1)' },
-          '50%': { transform: 'scale(1.02)' },
-        }
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
-        'glow': 'glow 2s ease-in-out infinite',
-        'pulse-subtle': 'pulse-subtle 2s ease-in-out infinite',
       },
     },
   },
