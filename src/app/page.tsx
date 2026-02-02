@@ -80,7 +80,7 @@ export default function Home() {
         resolve();
         return;
       }
-      speechSynthesis.cancel();
+      
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.lang = 'es-ES';
       utterance.rate = 1;
@@ -100,12 +100,25 @@ export default function Home() {
         resolve();
       };
 
-      try {
-        speechSynthesis.speak(utterance);
-      } catch (e) {
-        console.error('Could not speak:', e);
-        setAvatarStatus('idle');
-        resolve();
+      const doSpeak = () => {
+        try {
+          speechSynthesis.cancel();
+          speechSynthesis.speak(utterance);
+        } catch (e) {
+          console.error('Could not speak:', e);
+          setAvatarStatus('idle');
+          resolve();
+        }
+      };
+
+      if (speechSynthesis.getVoices().length > 0) {
+        doSpeak();
+      } else {
+        speechSynthesis.onvoiceschanged = () => {
+          speechSynthesis.onvoiceschanged = null; // Prevent multiple triggers
+          doSpeak();
+        };
+        speechSynthesis.getVoices();
       }
     });
   }, []);
