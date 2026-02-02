@@ -53,6 +53,8 @@ export default function LlamaAvatar({ status, className }: LlamaAvatarProps) {
           src="/llama.png"
           alt="Llama Avatar"
           fill
+          sizes="(max-width: 768px) 16rem, 24rem"
+          priority
           className="object-contain"
         />
       </div>
