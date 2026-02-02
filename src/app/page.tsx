@@ -74,10 +74,10 @@ export default function Home() {
   const [twinkleStyles, setTwinkleStyles] = useState<TwinkleStyle[]>([]);
 
   const speak = useCallback((text: string) => {
-    return new Promise<void>((resolve) => {
+    return new Promise<void>((resolve, reject) => {
       if (!('speechSynthesis' in window)) {
         console.error("Browser doesn't support speech synthesis.");
-        resolve();
+        reject(new Error("Speech synthesis not supported."));
         return;
       }
       
@@ -90,32 +90,35 @@ export default function Home() {
       utterance.onstart = () => {
         setAvatarStatus('speaking');
       };
+      
       utterance.onend = () => {
         setAvatarStatus('idle');
         resolve();
       };
+      
       utterance.onerror = (e) => {
         console.error('An error occurred during speech synthesis: ', e);
         setAvatarStatus('idle');
-        resolve();
+        reject(e); // Reject the promise on error
       };
 
       const doSpeak = () => {
-        try {
+        // If there's something speaking or pending, cancel it.
+        if (speechSynthesis.speaking) {
           speechSynthesis.cancel();
+          // Give a moment for cancel to take effect before speaking again
+          setTimeout(() => speechSynthesis.speak(utterance), 100);
+        } else {
           speechSynthesis.speak(utterance);
-        } catch (e) {
-          console.error('Could not speak:', e);
-          setAvatarStatus('idle');
-          resolve();
         }
       };
 
+      // Ensure voices are loaded before speaking
       if (speechSynthesis.getVoices().length > 0) {
         doSpeak();
       } else {
         speechSynthesis.onvoiceschanged = () => {
-          speechSynthesis.onvoiceschanged = null; // Prevent multiple triggers
+          speechSynthesis.onvoiceschanged = null;
           doSpeak();
         };
         speechSynthesis.getVoices();
@@ -124,19 +127,34 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
+    if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
+      return;
+    }
+  
     const welcomeMessage = "Bienvenido a Tukuy Yanpaq, mi nombre es PisqAI. Estoy aquí para ayudarte en lo que necesites. ¿En qué puedo asistirte hoy?";
     
-    const timer = setTimeout(async () => {
-      if (messages.length > 0) return;
+    if (messages.length > 0) {
+        return;
+    }
 
-      await speak(welcomeMessage);
-      
-      const welcomeChatMessage: Message = {
-        id: crypto.randomUUID(),
-        text: welcomeMessage,
-        sender: 'ai' as const,
-      };
-      setMessages([welcomeChatMessage]);
+    const timer = setTimeout(async () => {
+      try {
+        await speak(welcomeMessage);
+        const welcomeChatMessage: Message = {
+          id: crypto.randomUUID(),
+          text: welcomeMessage,
+          sender: 'ai' as const,
+        };
+        setMessages([welcomeChatMessage]);
+      } catch (error) {
+        console.error("Failed to play welcome message vocally:", error);
+        const welcomeChatMessage: Message = {
+          id: crypto.randomUUID(),
+          text: welcomeMessage,
+          sender: 'ai' as const,
+        };
+        setMessages([welcomeChatMessage]);
+      }
     }, 1000);
 
     return () => clearTimeout(timer);
@@ -165,7 +183,7 @@ export default function Home() {
       };
 
       setAvatarStatus('thinking');
-      setMessages([userMessage]);
+      setMessages((prev) => [...prev, userMessage]);
       await new Promise((res) => setTimeout(res, 1000));
 
       const responseText = getResponse(text);
@@ -175,10 +193,10 @@ export default function Home() {
         text: responseText,
         sender: 'ai' as const,
       };
-
-      setMessages([userMessage, aiMessage]);
-
+      
       await speak(responseText);
+      setMessages((prev) => [...prev, aiMessage]);
+
     },
     [avatarStatus, speak]
   );
