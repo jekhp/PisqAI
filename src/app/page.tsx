@@ -125,41 +125,6 @@ export default function Home() {
       }
     });
   }, []);
-
-  useEffect(() => {
-    if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
-      return;
-    }
-  
-    const welcomeMessage = "Bienvenido a Tukuy Yanpaq, mi nombre es PisqAI. Estoy aquí para ayudarte en lo que necesites. ¿En qué puedo asistirte hoy?";
-    
-    if (messages.length > 0) {
-        return;
-    }
-
-    const timer = setTimeout(async () => {
-      try {
-        await speak(welcomeMessage);
-        const welcomeChatMessage: Message = {
-          id: crypto.randomUUID(),
-          text: welcomeMessage,
-          sender: 'ai' as const,
-        };
-        setMessages([welcomeChatMessage]);
-      } catch (error) {
-        console.error("Failed to play welcome message vocally:", error);
-        const welcomeChatMessage: Message = {
-          id: crypto.randomUUID(),
-          text: welcomeMessage,
-          sender: 'ai' as const,
-        };
-        setMessages([welcomeChatMessage]);
-      }
-    }, 1000);
-
-    return () => clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [speak]);
   
   useEffect(() => {
     const styles = [...Array(30)].map(() => ({
