@@ -91,42 +91,95 @@ const responses: Record<string, string[]> = {
 };
 
 const getResponse = (text: string) => {
-  const cleanText = text.toLowerCase().replace(/[.,!?;:]/g, '');
-  const inputWords = new Set(cleanText.split(/\s+/).filter(Boolean));
-
-  let bestMatch = '';
-  let maxScore = 0;
-
+  const cleanText = text.toLowerCase().replace(/[.,!?;:]/g, '').trim();
+  
+  // Configuración de pesos (ajustables)
+  const WEIGHTS = {
+    EXACT_MATCH: 1000,
+    STARTS_WITH: 800,
+    WORD_MATCH: 700,
+    CONTAINS: 600,
+    CONTAINED_IN: 500,
+    // Penalizaciones
+    LONG_PHRASE_PENALTY: 0.1, // Por cada carácter de más
+    MULTI_WORD_BONUS: 50, // Bonus si la frase tiene múltiples palabras
+  };
+  
+  const matches: any[] = [];
+  
   for (const phrase of Object.keys(responses)) {
-    const phraseWords = phrase.toLowerCase().split(/\s+/).filter(Boolean);
-    let currentScore = 0;
-
-    for (const word of phraseWords) {
-      if (inputWords.has(word)) {
-        currentScore++;
+    const cleanPhrase = phrase.toLowerCase().replace(/[.,!?;:]/g, '').trim();
+    
+    let score = 0;
+    let matchType = 'none';
+    
+    // Coincidencia exacta
+    if (cleanText === cleanPhrase) {
+      score = WEIGHTS.EXACT_MATCH;
+      matchType = 'exact';
+    }
+    // El texto comienza con la frase
+    else if (cleanText.startsWith(cleanPhrase + ' ')) {
+      score = WEIGHTS.STARTS_WITH;
+      matchType = 'starts';
+    }
+    // Coincidencia de palabra independiente
+    else {
+      const wordBoundaryRegex = new RegExp(`(^|\\s)${cleanPhrase}(\\s|$|\\?|\\.|!)`, 'i');
+      if (wordBoundaryRegex.test(text)) {
+        score = WEIGHTS.WORD_MATCH;
+        matchType = 'word';
+        
+        // Bonus si es una frase de múltiples palabras
+        if (cleanPhrase.includes(' ')) {
+          score += WEIGHTS.MULTI_WORD_BONUS;
+        }
+      }
+      // Coincidencia parcial (contains)
+      else if (cleanText.includes(cleanPhrase)) {
+        score = WEIGHTS.CONTAINS;
+        matchType = 'contains';
+        
+        // Penalizar frases muy largas que coinciden parcialmente
+        score -= (cleanPhrase.length * WEIGHTS.LONG_PHRASE_PENALTY);
+      }
+      // La frase contiene el texto
+      else if (cleanPhrase.includes(cleanText)) {
+        score = WEIGHTS.CONTAINED_IN;
+        matchType = 'contained';
       }
     }
-
-    if (currentScore === 0) continue;
-
-    // A better match has more matching words.
-    // If scores are equal, the longer phrase (more specific) wins.
-    if (currentScore > maxScore) {
-      maxScore = currentScore;
-      bestMatch = phrase;
-    } else if (currentScore === maxScore) {
-      if (phrase.length > bestMatch.length) {
-        bestMatch = phrase;
-      }
+    
+    // Bonus adicional si la frase aparece al inicio del diccionario
+    // (para priorizar entradas más importantes)
+    const phraseIndex = Object.keys(responses).indexOf(phrase);
+    const positionBonus = (Object.keys(responses).length - phraseIndex) * 0.1;
+    score += positionBonus;
+    
+    if (score > 0) {
+      matches.push({
+        phrase,
+        score,
+        matchType,
+        phraseLength: cleanPhrase.length,
+        isMultiWord: cleanPhrase.includes(' ')
+      });
     }
   }
-
-  if (bestMatch) {
-    const responseList = responses[bestMatch];
+  
+  if (matches.length > 0) {
+    // Ordenar por score descendente
+    matches.sort((a, b) => b.score - a.score);
+    
+    // Para debugging
+    console.log('Top 3 matches:', matches.slice(0, 3));
+    
+    const bestMatch = matches[0];
+    const responseList = responses[bestMatch.phrase];
     return responseList[Math.floor(Math.random() * responseList.length)];
   }
 
-  return `No entendí tu mensaje. Prueba con palabras como 'hola', 'adios', 'ayuda', 'servicios', etc.`;
+  return `No entendí tu mensaje. Prueba con palabras como 'hola', 'adios', 'ayuda', etc.`;
 };
 
 
@@ -170,7 +223,7 @@ export default function Home() {
       utterance.onerror = (e) => {
         console.error('An error occurred during speech synthesis: ', e);
         setAvatarStatus('idle');
-        reject(e);
+        resolve(); // Resolve instead of reject to not break the flow
       };
 
       const doSpeak = () => {
@@ -213,7 +266,6 @@ export default function Home() {
       };
 
       setAvatarStatus('thinking');
-      setMessages([userMessage]);
       await new Promise((res) => setTimeout(res, 1000));
 
       const responseText = getResponse(text);
@@ -224,7 +276,7 @@ export default function Home() {
         sender: 'ai' as const,
       };
       
-      setMessages((prev) => [userMessage, aiMessage]);
+      setMessages([userMessage, aiMessage]);
 
       try {
         await speak(responseText);
