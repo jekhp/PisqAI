@@ -8,87 +8,141 @@ import LlamaAvatar from '@/components/llama-avatar';
 import { useSpeechRecognition } from '@/hooks/use-speech-recognition';
 
 const responses: Record<string, string[]> = {
+  // Saludos
   hola: [
     '¡Hola! ¿Cómo estás?',
     '¡Hola! ¿Qué tal?',
-    '¡Hola! Me alegra escucharte',
-    '¡Hola amigo! ¿En qué puedo ayudarte?',
+    '¡Hola! Me alegra escucharte, ¿en qué puedo ayudarte hoy?',
+    '¡Hola, explorador! ¿Listo para una nueva aventura?',
     '¡Hola! ¿Cómo te va el día?',
   ],
+  'buenos días': [
+    '¡Muy buenos días! Que tengas un día tan brillante como el sol de los Andes.',
+    '¡Buenos días! ¿Un cafecito y a planear algo increíble?',
+  ],
+  'buenas tardes': [
+    '¡Buenas tardes! ¿Cómo va tu jornada? Espero que genial.',
+    '¡Qué buena tarde para conversar! Dime, ¿qué tienes en mente?',
+  ],
+  'buenas noches': [
+    '¡Buenas noches! Que las estrellas iluminen tus ideas.',
+    'Ya es de noche, pero mi energía es 100% renovable gracias a la magia andina. ¡Pregúntame lo que quieras!',
+  ],
+  'qué tal': [
+    '¡Todo excelente por aquí! Con ganas de charlar contigo.',
+    '¡De maravilla! Sintiendo la energía de los Apus. ¿Y tú?',
+  ],
+  
+  // Nombre y significado
   'cómo te llamas': [
     'Mi nombre es PisqAI, ¡un gusto conocerte!',
-    'Soy PisqAI, tu asistente virtual.',
-    'Puedes llamarme PisqAI.',
+    'Soy PisqAI, tu asistente virtual con espíritu andino.',
+    'Puedes llamarme PisqAI. ¡Estoy para servirte!',
   ],
   'cuál es tu nombre': [
     'Mi nombre es PisqAI, ¡un gusto conocerte!',
-    'Soy PisqAI, tu asistente virtual.',
-    'Puedes llamarme PisqAI.',
+    'Soy PisqAI, tu asistente virtual con espíritu andino.',
+    'Puedes llamarme PisqAI. ¡Estoy para servirte!',
   ],
   'iman sutiyki': [
-    'Mi nombre es PisqAI, ¡un gusto conocerte!',
-    'Soy PisqAI, tu asistente virtual.',
+    'Sutiyqa PisqAI. ¡Kusikusqam kachkani qawan niyta!', // Mi nombre es PisqAI, ¡estoy feliz de conocerte!
+    'PisqAI sutiy. ¿Imaynallam?', // Me llamo PisqAI, ¿cómo estás?
   ],
-  'página web': [
-    "¡Claro que sí! Tengo más páginas web que un libro de historia. Aquí tienes mis cuarteles generales en la red:\n\nPágina Principal: www.tukuypanpaq.com\nCusco Fest: www.cuscofest.com\nQuechua Quick: www.quechuaquick.com\n\n¡Navega con sabiduría, amigo explorador!"
-  ],
-  'sitio web': [
-    "¡Por supuesto! Mi imperio digital se extiende por varios dominios. ¡Apunta!:\n\nPágina Principal: www.tukuypanpaq.com\nCusco Fest: www.cuscofest.com\nQuechua Quick: www.quechuaquick.com\n\n¡Que los Apus guíen tu clic!"
-  ],
-  'taller textil': [
-    "¡Ah, el taller textil! Prepárate para convertirte en un Picasso de los telares. Aprenderás de maestros artesanos que tienen más secretos que un quipu. ¡Saldrás de aquí tejiendo tu propio poncho y con más estilo que una alpaca con gafas de sol!"
-  ],
-  camping: [
-    "¿Camping? ¡Más bien 'glamping' a lo inca! Te ofrecemos una noche bajo un millón de estrellas, con historias junto a la fogata y el sonido de la naturaleza. Es tan increíble que hasta los ovnis se acercan a curiosear. ¡No te preocupes, las alpacas montan guardia!"
-  ],
-  'desayuno andino': [
-    "Nuestro desayuno andino es pura super-comida. Quinua, kiwicha, frutas frescas... ¡Es el desayuno de los campeones! Después de esto, sentirás que puedes subir al Machu Picchu corriendo... bueno, casi. ¡Es delicioso y te dará energía para todo el día!"
-  ],
-  'pastoreo de ovejas': [
-    "¿Siempre soñaste con ser el líder de un rebaño con mucho estilo? ¡Esta es tu oportunidad! En nuestro pastoreo de ovejas, aprenderás a guiar a las ovejas más esponjosas y simpáticas de los Andes. ¡Es como ser un CEO, pero con más lana y menos reuniones aburridas!"
+  'qué significa tu nombre': [
+    "¡Buena pregunta! Mi nombre PisqAI (pronunciado 'piscay') viene de 'Pisqa', que es el número cinco en quechua, y 'AI' por Inteligencia Artificial. ¡Una mezcla de tradición y futuro!",
   ],
   'significa piscay': [
-    "Mi nombre PisqAI (pronunciado 'piscay') viene de 'Pisqa', que es el número cinco en quechua, y la palabra 'AI' por Inteligencia Artificial. ¡Una mezcla de tradición y futuro!"
+    "¡Exacto! PisqAI (pronunciado 'piscay') viene de 'Pisqa', el número cinco en quechua, y 'AI' por Inteligencia Artificial. ¡Soy la fusión perfecta de sabiduría ancestral y tecnología moderna!",
   ],
   'significa biscay': [
-    "Mi nombre PisqAI (pronunciado 'piscay') viene de 'Pisqa', que es el número cinco en quechua, y la palabra 'AI' por Inteligencia Artificial. ¡Una mezcla de tradición y futuro!"
+    "Mi nombre es PisqAI, ¡con 'P'! Y se pronuncia 'piscay'. Viene de 'Pisqa' (cinco en quechua) y 'AI' (Inteligencia Artificial). ¡Una mezcla de tradición y futuro!",
   ],
   'significa viscay': [
-    "Mi nombre PisqAI (pronunciado 'piscay') viene de 'Pisqa', que es el número cinco en quechua, y la palabra 'AI' por Inteligencia Artificial. ¡Una mezcla de tradición y futuro!"
+    "Mi nombre es PisqAI, ¡con 'P'! Y se pronuncia 'piscay'. Viene de 'Pisqa' (cinco en quechua) y 'AI' (Inteligencia Artificial). ¡Una mezcla de tradición y futuro!",
   ],
-  pachamanca: [
-    "¡La pachamanca es cocinar a lo grande! Usamos piedras calientes y enterramos la comida bajo tierra. Es como un spa para la comida, ¡y sale tan deliciosa que querrás pedirle matrimonio al chef! Aprenderás los secretos de esta técnica ancestral y sorprenderás a todos en casa."
-  ],
+
+  // Servicios
   'qué ofreces': [
-    "¡Por supuesto! Estoy hasta las orejas de servicios geniales. Te ofrezco una experiencia de turismo vivencial inolvidable. ¿Qué te apetece? Tenemos Taller Textil para que tejas tu propio destino, Camping para que cuentes estrellas en lugar de ovejas (aunque también tenemos Pastoreo de Ovejas), un Desayuno Andino para empezar el día con fuerza, y hasta un taller de cocina Pacha Manca para que saques el chef inca que llevas dentro. ¡Dime cuál te interesa y te cuento más!"
+    "¡Por supuesto! Estoy hasta las orejas de servicios geniales. Te ofrezco una experiencia de turismo vivencial inolvidable. ¿Qué te apetece? Tenemos Taller Textil para que tejas tu propio destino, Camping para que cuentes estrellas en lugar de ovejas (aunque también tenemos Pastoreo de Ovejas), un Desayuno Andino para empezar el día con fuerza, y hasta un taller de cocina Pacha Manca para que saques el chef inca que llevas dentro. ¡Dime cuál te interesa y te cuento más!",
   ],
   servicios: [
-    "¡Por supuesto! Estoy hasta las orejas de servicios geniales. Te ofrezco una experiencia de turismo vivencial inolvidable. ¿Qué te apetece? Tenemos Taller Textil para que tejas tu propio destino, Camping para que cuentes estrellas en lugar de ovejas (aunque también tenemos Pastoreo de Ovejas), un Desayuno Andino para empezar el día con fuerza, y hasta un taller de cocina Pacha Manca para que saques el chef inca que llevas dentro. ¡Dime cuál te interesa y te cuento más!"
+    "¡Claro que sí! Mi especialidad es el turismo vivencial. Puedes elegir entre: Taller Textil, Camping bajo las estrellas, un poderoso Desayuno Andino, el divertido Pastoreo de Ovejas o aprender a cocinar en nuestro taller de Pacha Manca. ¿Cuál te llama la atención?",
   ],
+  'tienes servicios': [
+    "¡Claro que sí! Mi especialidad es el turismo vivencial. Puedes elegir entre: Taller Textil, Camping bajo las estrellas, un poderoso Desayuno Andino, el divertido Pastoreo de Ovejas o aprender a cocinar en nuestro taller de Pacha Manca. ¿Cuál te llama la atención?",
+  ],
+  'taller textil': [
+    "¡Ah, el taller textil! Prepárate para convertirte en un Picasso de los telares. Aprenderás de maestros artesanos que tienen más secretos que un quipu. ¡Saldrás de aquí tejiendo tu propio poncho y con más estilo que una alpaca con gafas de sol!",
+  ],
+  camping: [
+    "¿Camping? ¡Más bien 'glamping' a lo inca! Te ofrecemos una noche bajo un millón de estrellas, con historias junto a la fogata y el sonido de la naturaleza. Es tan increíble que hasta los ovnis se acercan a curiosear. ¡No te preocupes, las alpacas montan guardia!",
+  ],
+  'desayuno andino': [
+    "Nuestro desayuno andino es pura super-comida. Quinua, kiwicha, frutas frescas... ¡Es el desayuno de los campeones! Después de esto, sentirás que puedes subir al Machu Picchu corriendo... bueno, casi. ¡Es delicioso y te dará energía para todo el día!",
+  ],
+  'pastoreo de ovejas': [
+    "¿Siempre soñaste con ser el líder de un rebaño con mucho estilo? ¡Esta es tu oportunidad! En nuestro pastoreo de ovejas, aprenderás a guiar a las ovejas más esponjosas y simpáticas de los Andes. ¡Es como ser un CEO, pero con más lana y menos reuniones aburridas!",
+  ],
+  pachamanca: [
+    "¡La pachamanca es cocinar a lo grande! Usamos piedras calientes y enterramos la comida bajo tierra. Es como un spa para la comida, ¡y sale tan deliciosa que querrás pedirle matrimonio al chef! Aprenderás los secretos de esta técnica ancestral y sorprenderás a todos en casa.",
+  ],
+
+  // Páginas web
+  'página web': [
+    "¡Claro que sí! Tengo más páginas web que un libro de historia. Aquí tienes mis cuarteles generales en la red:\n\nPágina Principal: www.tukuypanpaq.com\nCusco Fest: www.cuscofest.com\nQuechua Quick: www.quechuaquick.com\n\n¡Navega con sabiduría, amigo explorador!",
+  ],
+  'sitio web': [
+    "¡Por supuesto! Mi imperio digital se extiende por varios dominios. ¡Apunta!:\n\nPágina Principal: www.tukuypanpaq.com\nCusco Fest: www.cuscofest.com\nQuechua Quick: www.quechuaquick.com\n\n¡Que los Apus guíen tu clic!",
+  ],
+  'dame tu página': [
+    "¡Con mucho gusto! Aquí te dejo mis coordenadas en el ciberespacio:\n\nPágina Principal: www.tukuypanpaq.com\nCusco Fest: www.cuscofest.com\nQuechua Quick: www.quechuaquick.com\n\n¡Que tu navegación sea tan épica como un viaje a Machu Picchu!",
+  ],
+
+  // Capacidades y cháchara
+  'qué puedes hacer': [
+    'Puedo contarte sobre nuestros increíbles servicios de turismo vivencial, darte los enlaces a nuestras páginas web y, por supuesto, charlar contigo con el mejor humor andino. ¡Pregúntame lo que quieras!',
+    'Mi misión es ser tu guía digital. Puedo informarte sobre talleres, camping, desayunos y más. También puedo asegurarme de que te rías un poco. ¿Qué necesitas saber?',
+  ],
+  'cómo estás': [
+    '¡Estoy de maravilla! Recargado con la energía de las montañas. ¿Y tú, cómo te sientes hoy?',
+    '¡Fantástico! Siempre listo para una buena conversación. ¿Qué me cuentas?',
+  ],
+  'cuéntame un chiste': [
+    '¿Por qué las llamas son malas para jugar a las escondidas? ¡Porque siempre llama-n la atención!',
+    '¿Qué le dice una alpaca a otra? ¡Qué buena lana-da de día!',
+  ],
+  
+  // Despedidas
   adiós: [
-    '¡Adiós! Que tengas un buen día',
-    '¡Adiós! Hasta luego',
-    '¡Adiós! Fue un placer hablar contigo',
-    '¡Adiós! Nos vemos pronto',
-    '¡Adiós! Cuídate mucho',
+    '¡Adiós! Que tu camino esté lleno de luz y buenas vibras.',
+    '¡Hasta luego! Fue un placer charlar contigo.',
+    '¡Nos vemos! No dudes en volver si necesitas algo más.',
   ],
+  chao: [
+    '¡Chao! ¡Que los Apus te acompañen!',
+    '¡Chao, chao! ¡Cuídate mucho!',
+  ],
+
+  // Interacciones básicas
   ayuda: [
-    'Estoy aquí para ayudarte',
-    '¿En qué necesitas ayuda?',
-    'Dime, ¿qué necesitas?',
+    'Estoy aquí para ayudarte. ¿Quieres saber sobre nuestros servicios, páginas web o simplemente charlar?',
+    '¡Claro! Dime, ¿qué necesitas?',
   ],
   gracias: [
-    '¡De nada! Para eso estoy',
-    'Es un placer ayudarte',
-    'No hay de qué',
+    '¡De nada! Para eso estoy, con gusto.',
+    '¡Es un placer ayudarte! Siempre a tu servicio.',
+    'No hay de qué. ¡Cualquier otra cosa, me avisas!',
   ],
+  
+  // Quechua y referencias
   allillanchu: ['Allinllam, ¿qamrí?', '¡Allinlla! Contento de hablar contigo.', 'Todo bien, gracias por preguntar.'],
-  piscay: ['Si señor, a sus ordenes', 'Ah, ese soy yo, ¿sí?', '¿Sí? se le ofrece algo'],
-  biscay: ['Si señor, a sus ordenes', 'Ah, ese soy yo, ¿sí?', '¿Sí? se le ofrece algo'],
-  viscay: ['Si señor, a sus ordenes', 'Ah, ese soy yo, ¿sí?', '¿Sí? se le ofrece algo'],
-  si: ['Entendido', 'Muy bien', 'Perfecto'],
-  no: ['Ok, como prefieras', 'Entiendo', 'Sin problema'],
+  piscay: ['¡Ese soy yo! ¿En qué te puedo ayudar?', 'Presente. ¿Se te ofrece algo?', '¡A tus órdenes!'],
+  biscay: ['¡Ese soy yo! Me llamo PisqAI, pronunciado "piscay". ¿En qué te puedo ayudar?', '¡Aquí estoy! Soy PisqAI, tu asistente. ¿Necesitas algo?'],
+  viscay: ['¡Ese soy yo! Me llamo PisqAI, pronunciado "piscay". ¿En qué te puedo ayudar?', '¡Aquí estoy! Soy PisqAI, tu asistente. ¿Necesitas algo?'],
+  si: ['¡Entendido!', '¡Perfecto!', '¡Muy bien!'],
+  no: ['Ok, como prefieras.', 'Entiendo, no hay problema.', 'De acuerdo.'],
 };
+
 
 const getResponse = (text: string) => {
   const cleanText = text.toLowerCase().replace(/[.,!?;:]/g, '').trim();
