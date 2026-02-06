@@ -12,6 +12,11 @@ export const useSpeechRecognition = ({ onTranscript }: UseSpeechRecognitionProps
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const { toast } = useToast();
 
+  const onTranscriptRef = useRef(onTranscript);
+  useEffect(() => {
+    onTranscriptRef.current = onTranscript;
+  }, [onTranscript]);
+
   const stopListening = useCallback(() => {
     if (recognitionRef.current) {
       recognitionRef.current.stop();
@@ -47,7 +52,7 @@ export const useSpeechRecognition = ({ onTranscript }: UseSpeechRecognitionProps
     recognition.onresult = (event) => {
       const transcript = event.results[event.results.length - 1][0].transcript.trim();
       if (transcript) {
-        onTranscript(transcript);
+        onTranscriptRef.current(transcript);
       }
     };
 
@@ -75,8 +80,7 @@ export const useSpeechRecognition = ({ onTranscript }: UseSpeechRecognitionProps
     };
 
     recognition.start();
-  }, [isListening, onTranscript, toast]);
-
+  }, [isListening, toast]);
 
   useEffect(() => {
     return () => {

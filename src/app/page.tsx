@@ -71,6 +71,9 @@ const responses: Record<string, string[]> = {
   'tienes servicios': [
     "¡Claro que sí! Mi especialidad es el turismo vivencial. Puedes elegir entre: Taller Textil, Camping bajo las estrellas, un poderoso Desayuno Andino, el divertido Pastoreo de Ovejas o aprender a cocinar en nuestro taller de Pacha Manca. ¿Cuál te llama la atención?",
   ],
+  'algunos servicios que ofreces': [
+    "¡Claro que sí! Mi especialidad es el turismo vivencial. Puedes elegir entre: Taller Textil, Camping bajo las estrellas, un poderoso Desayuno Andino, el divertido Pastoreo de Ovejas o aprender a cocinar en nuestro taller de Pacha Manca. ¿Cuál te llama la atención?",
+  ],
   'taller textil': [
     "¡Ah, el taller textil! Prepárate para convertirte en un Picasso de los telares. Aprenderás de maestros artesanos que tienen más secretos que un quipu. ¡Saldrás de aquí tejiendo tu propio poncho y con más estilo que una alpaca con gafas de sol!",
   ],
@@ -137,8 +140,8 @@ const responses: Record<string, string[]> = {
   // Quechua y referencias
   allillanchu: ['Allinllam, ¿qamrí?', '¡Allinlla! Contento de hablar contigo.', 'Todo bien, gracias por preguntar.'],
   piscay: ['¡Ese soy yo! ¿En qué te puedo ayudar?', 'Presente. ¿Se te ofrece algo?', '¡A tus órdenes!'],
-  biscay: ['¡Ese soy yo! Me llamo PisqAI, pronunciado "piscay". ¿En qué te puedo ayudar?', '¡Aquí estoy! Soy PisqAI, tu asistente. ¿Necesitas algo?'],
-  viscay: ['¡Ese soy yo! Me llamo PisqAI, pronunciado "piscay". ¿En qué te puedo ayudar?', '¡Aquí estoy! Soy PisqAI, tu asistente. ¿Necesitas algo?'],
+  biscay: ['Mi nombre es PisqAI, con P. Pero, ¡a tus órdenes! ¿Qué necesitas?', '¡Aquí PisqAI! ¿En qué te ayudo?'],
+  viscay: ['Mi nombre es PisqAI, con P. Pero, ¡a tus órdenes! ¿Qué necesitas?', '¡Aquí PisqAI! ¿En qué te ayudo?'],
   si: ['¡Entendido!', '¡Perfecto!', '¡Muy bien!'],
   no: ['Ok, como prefieras.', 'Entiendo, no hay problema.', 'De acuerdo.'],
 };
@@ -250,6 +253,7 @@ export default function Home() {
     'idle' | 'thinking' | 'speaking' | 'listening'
   >('idle');
   const [twinkleStyles, setTwinkleStyles] = useState<TwinkleStyle[]>([]);
+  const [shouldListenAfterSpeaking, setShouldListenAfterSpeaking] = useState(false);
 
   const speak = useCallback((text: string) => {
     return new Promise<void>((resolve, reject) => {
@@ -282,6 +286,8 @@ export default function Home() {
 
       const doSpeak = () => {
         if (speechSynthesis.speaking) {
+          // If it's already speaking, cancel to avoid overlap, then speak.
+          // This can sometimes cause issues, but is a common strategy.
           speechSynthesis.cancel();
           setTimeout(() => speechSynthesis.speak(utterance), 100);
         } else {
@@ -289,6 +295,7 @@ export default function Home() {
         }
       };
       
+      // The voices might not be loaded immediately. We wait for them.
       if (speechSynthesis.getVoices().length > 0) {
         doSpeak();
       } else {
@@ -312,18 +319,53 @@ export default function Home() {
   const processAndRespond = useCallback(
     async (text: string) => {
       if (avatarStatus === 'thinking' || avatarStatus === 'speaking') return;
-
+  
       const userMessage: Message = {
         id: crypto.randomUUID(),
         text,
         sender: 'user' as const,
       };
-
+  
+      const cleanText = text.toLowerCase().replace(/[.,!?;:]/g, '').trim();
+      const wakeWords = ['pisqai', 'biscay', 'viscay'];
+  
+      let command = cleanText;
+      let isWakeWordOnly = false;
+      
+      for (const wakeWord of wakeWords) {
+        if (cleanText === wakeWord) {
+          isWakeWordOnly = true;
+          break;
+        }
+        if (cleanText.startsWith(wakeWord + ' ')) {
+          command = cleanText.substring(wakeWord.length).trim();
+          break;
+        }
+      }
+  
+      if (isWakeWordOnly) {
+        const responseText = "¡Sí, dime! ¿En qué puedo ayudarte?";
+        const aiMessage: Message = {
+          id: crypto.randomUUID(),
+          text: responseText,
+          sender: 'ai' as const,
+        };
+        setMessages([userMessage, aiMessage]);
+        
+        try {
+          await speak(responseText);
+          setShouldListenAfterSpeaking(true);
+        } catch(e) {
+          console.error("Speech failed to play.", e);
+        }
+        return; // Stop processing
+      }
+      
+      // If not just wake word, proceed as normal
       setAvatarStatus('thinking');
       await new Promise((res) => setTimeout(res, 1000));
-
-      const responseText = getResponse(text);
-
+      const responseText = getResponse(command);
+  
       const aiMessage: Message = {
         id: crypto.randomUUID(),
         text: responseText,
@@ -331,7 +373,7 @@ export default function Home() {
       };
       
       setMessages([userMessage, aiMessage]);
-
+  
       try {
         await speak(responseText);
       } catch(e) {
@@ -340,10 +382,18 @@ export default function Home() {
     },
     [avatarStatus, speak]
   );
+  
 
   const { isListening, startListening, stopListening } = useSpeechRecognition({
     onTranscript: processAndRespond,
   });
+
+  useEffect(() => {
+    if (shouldListenAfterSpeaking && !isListening && avatarStatus === 'idle') {
+      startListening();
+      setShouldListenAfterSpeaking(false);
+    }
+  }, [shouldListenAfterSpeaking, isListening, startListening, avatarStatus]);
 
   useEffect(() => {
     if (avatarStatus !== 'speaking' && avatarStatus !== 'thinking') {
