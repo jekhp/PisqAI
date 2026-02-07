@@ -146,6 +146,11 @@ const responses: Record<string, string[]> = {
   no: ['Ok, como prefieras.', 'Entiendo, no hay problema.', 'De acuerdo.'],
 };
 
+const music: Record<string, string> = {
+  'carnaval': 'https://www.youtube.com/watch?v=JtP3cJJ74BI&list=RDJtP3cJJ74BI&start_radio=1',
+  'huayno': 'https://www.youtube.com/watch?v=4QX8k_g_54c',
+  'rock en español': 'https://www.youtube.com/watch?v=kRz_gA9s3pA',
+};
 
 const getResponse = (text: string) => {
   const cleanText = text.toLowerCase().replace(/[.,!?;:]/g, '').trim();
@@ -254,6 +259,7 @@ export default function Home() {
   >('idle');
   const [twinkleStyles, setTwinkleStyles] = useState<TwinkleStyle[]>([]);
   const [shouldListenAfterSpeaking, setShouldListenAfterSpeaking] = useState(false);
+  const recognitionOnTranscriptRef = useRef<(transcript: string) => void>((_) => {});
 
   const speak = useCallback((text: string) => {
     return new Promise<void>((resolve, reject) => {
@@ -286,8 +292,6 @@ export default function Home() {
 
       const doSpeak = () => {
         if (speechSynthesis.speaking) {
-          // If it's already speaking, cancel to avoid overlap, then speak.
-          // This can sometimes cause issues, but is a common strategy.
           speechSynthesis.cancel();
           setTimeout(() => speechSynthesis.speak(utterance), 100);
         } else {
@@ -327,6 +331,36 @@ export default function Home() {
       };
   
       const cleanText = text.toLowerCase().replace(/[.,!?;:]/g, '').trim();
+
+      // Check for music command
+      const musicTriggers = ['reproduce', 'pon', 'toca', 'suena'];
+      const isMusicRequest = musicTriggers.some(trigger => cleanText.startsWith(trigger));
+
+      if (isMusicRequest) {
+        for (const musicKeyword in music) {
+            if (cleanText.includes(musicKeyword)) {
+                const url = music[musicKeyword];
+                window.open(url, '_blank');
+
+                const responseText = `¡Claro! Reproduciendo ${musicKeyword} para ti.`;
+                const aiMessage: Message = {
+                    id: crypto.randomUUID(),
+                    text: responseText,
+                    sender: 'ai' as const,
+                };
+                
+                setMessages([userMessage, aiMessage]);
+          
+                try {
+                    await speak(responseText);
+                } catch(e) {
+                    console.error("Speech failed to play.", e);
+                }
+                return;
+            }
+        }
+      }
+      
       const wakeWords = ['pisqai', 'biscay', 'viscay'];
   
       let command = cleanText;
@@ -383,9 +417,12 @@ export default function Home() {
     [avatarStatus, speak]
   );
   
+  useEffect(() => {
+    recognitionOnTranscriptRef.current = processAndRespond;
+  }, [processAndRespond]);
 
   const { isListening, startListening, stopListening } = useSpeechRecognition({
-    onTranscript: processAndRespond,
+    onTranscript: (transcript) => recognitionOnTranscriptRef.current(transcript),
   });
 
   useEffect(() => {
