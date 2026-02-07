@@ -310,16 +310,6 @@ export default function Home() {
     });
   }, []);
 
-  useEffect(() => {
-    const styles = Array.from({ length: 30 }, () => ({
-      left: `${Math.random() * 100}%`,
-      top: `${Math.random() * 100}%`,
-      animationDelay: `${Math.random() * 5}s`,
-      animationDuration: `${2 + Math.random() * 3}s`,
-    }));
-    setTwinkleStyles(styles);
-  }, []);
-
   const processAndRespond = useCallback(
     async (text: string) => {
       if (avatarStatus === 'thinking' || avatarStatus === 'speaking') return;
@@ -437,6 +427,16 @@ export default function Home() {
       setAvatarStatus(isListening ? 'listening' : 'idle');
     }
   }, [isListening, avatarStatus]);
+
+  useEffect(() => {
+    const styles = Array.from({ length: 30 }, () => ({
+      left: `${Math.random() * 100}%`,
+      top: `${Math.random() * 100}%`,
+      animationDelay: `${Math.random() * 5}s`,
+      animationDuration: `${2 + Math.random() * 3}s`,
+    }));
+    setTwinkleStyles(styles);
+  }, []);
 
   return (
     <div className="h-screen w-screen flex flex-col bg-gradient-to-b from-[#0A0E17] via-[#0F172A] to-[#0A0E17] relative overflow-hidden">
