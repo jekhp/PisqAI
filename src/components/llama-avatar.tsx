@@ -32,8 +32,6 @@ export default function LlamaAvatar({ status, className }: LlamaAvatarProps) {
     setParticleStyles(styles);
   }, []);
 
-  const imageUrl = status === 'speaking' ? '/llamahablando.gif' : '/llama-quieta.gif';
-
   return (
     <div
       className={cn(
@@ -89,19 +87,37 @@ export default function LlamaAvatar({ status, className }: LlamaAvatarProps) {
           )}
         />
         
-        <Image
-          key={imageUrl}
-          src={imageUrl}
-          alt="Llama Avatar"
-          width={700}
-          height={403}
-          unoptimized={true}
-          priority
-          className="object-contain drop-shadow-2xl"
-          style={{
-            filter: 'drop-shadow(0 20px 40px rgba(0, 168, 255, 0.3))'
-          }}
-        />
+        <div className="relative">
+          <Image
+            src="/llama-quieta.gif"
+            alt="Llama Avatar"
+            width={700}
+            height={403}
+            unoptimized={true}
+            priority
+            className={cn(
+              "object-contain drop-shadow-2xl transition-opacity duration-300 ease-in-out",
+              status === 'speaking' ? 'opacity-0' : 'opacity-100'
+            )}
+            style={{
+              filter: 'drop-shadow(0 20px 40px rgba(0, 168, 255, 0.3))'
+            }}
+          />
+          <Image
+            src="/llamahablando.gif"
+            alt="Llama Avatar"
+            width={700}
+            height={403}
+            unoptimized={true}
+            className={cn(
+              "absolute top-0 left-0 object-contain drop-shadow-2xl transition-opacity duration-300 ease-in-out",
+              status === 'speaking' ? 'opacity-100' : 'opacity-0'
+            )}
+            style={{
+              filter: 'drop-shadow(0 20px 40px rgba(0, 168, 255, 0.3))'
+            }}
+          />
+        </div>
       </div>
 
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
