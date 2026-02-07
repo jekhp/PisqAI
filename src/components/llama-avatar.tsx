@@ -22,7 +22,8 @@ export default function LlamaAvatar({ status, className }: LlamaAvatarProps) {
   const [particleStyles, setParticleStyles] = useState<ParticleStyle[]>([]);
 
   useEffect(() => {
-    const styles = [...Array(20)].map((_, i) => ({
+    // Generate particle styles only on the client-side
+    const styles = Array.from({ length: 20 }, (_, i) => ({
       left: `${Math.random() * 100}%`,
       top: `${Math.random() * 100}%`,
       animationDelay: `${i * 0.1}s`,
@@ -30,6 +31,8 @@ export default function LlamaAvatar({ status, className }: LlamaAvatarProps) {
     }));
     setParticleStyles(styles);
   }, []);
+
+  const imageUrl = status === 'speaking' ? '/llamahablando.gif' : '/llama-quieta.gif';
 
   return (
     <div
@@ -69,7 +72,7 @@ export default function LlamaAvatar({ status, className }: LlamaAvatarProps) {
 
       <div
         className={cn(
-          'relative w-full h-full max-w-[600px] max-h-[600px]',
+          'relative w-full max-w-2xl',
           'transition-all duration-500 z-20',
           'flex items-center justify-center',
           status === 'thinking' && 'scale-110 animate-float',
@@ -87,10 +90,12 @@ export default function LlamaAvatar({ status, className }: LlamaAvatarProps) {
         />
         
         <Image
-          src="/llama.png"
+          key={imageUrl}
+          src={imageUrl}
           alt="Llama Avatar"
-          fill
-          sizes="(max-width: 768px) 80vw, 600px"
+          width={700}
+          height={403}
+          unoptimized={true}
           priority
           className="object-contain drop-shadow-2xl"
           style={{
