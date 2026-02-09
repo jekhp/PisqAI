@@ -295,8 +295,35 @@ export default function ChessGame({ onExit, speak }: ChessGameProps) {
         const bestMove = getBestMove(board);
 
         if (bestMove) {
-            const moveNotation = formatMove({ ...bestMove, piece: board[bestMove.from.row][bestMove.from.col] });
-            await speak(`Mi movimiento es ${moveNotation}.`);
+            const pieceToMove = board[bestMove.from.row][bestMove.from.col];
+            const capturedPiece = board[bestMove.to.row][bestMove.to.col];
+            const toSquare = `${String.fromCharCode(97 + bestMove.to.col)}${8 - bestMove.to.row}`;
+
+            const pieceNames: { [key: string]: string } = {
+                'p': 'peón', 'n': 'caballo', 'b': 'alfil', 'r': 'torre', 'q': 'reina', 'k': 'rey'
+            };
+
+            const pieceName = pieceNames[pieceToMove.toLowerCase()];
+            
+            let narration = '';
+            if (capturedPiece) {
+                const capturedPieceName = pieceNames[capturedPiece.toLowerCase()];
+                const phrases = [
+                    `Mi ${pieceName} captura tu ${capturedPieceName} en ${toSquare}.`,
+                    `Con mi ${pieceName}, digo adiós a tu ${capturedPieceName}.`,
+                    `Tu ${capturedPieceName} se ha encontrado con mi ${pieceName}. ¡A ver qué haces ahora!`,
+                ];
+                narration = phrases[Math.floor(Math.random() * phrases.length)];
+            } else {
+                 const phrases = [
+                    `Muevo mi ${pieceName} a ${toSquare}.`,
+                    `Mi ${pieceName} avanza a ${toSquare}.`,
+                    `Coloco mi ${pieceName} en ${toSquare}. ¿Qué te parece?`,
+                ];
+                narration = phrases[Math.floor(Math.random() * phrases.length)];
+            }
+            
+            await speak(narration);
             makeMove(bestMove.from, bestMove.to, board);
         } else {
              setStatus('¡No tengo movimientos! Creo que ganaste.');
