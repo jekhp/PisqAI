@@ -237,7 +237,7 @@ const getResponse = (text: string) => {
     matches.sort((a, b) => b.score - a.score);
     
     // Para debugging
-    console.log('Top 3 matches:', matches.slice(0, 3));
+    // console.log('Top 3 matches:', matches.slice(0, 3));
     
     const bestMatch = matches[0];
     const responseList = responses[bestMatch.phrase];
@@ -396,7 +396,7 @@ export default function Home() {
       }
       
       setAvatarStatus('thinking');
-      await new Promise((res) => setTimeout(res, 1000));
+      await new Promise((res) => setTimeout(res, 500)); // Shorter thinking time
       const response = getResponse(command);
   
       const aiMessage: Message = {
@@ -424,8 +424,11 @@ export default function Home() {
   });
 
   useEffect(() => {
-    recognitionOnTranscriptRef.current = processAndRespond;
-  }, [processAndRespond]);
+    recognitionOnTranscriptRef.current = (transcript: string) => {
+      stopListening();
+      processAndRespond(transcript);
+    }
+  }, [processAndRespond, stopListening]);
 
   useEffect(() => {
     if (shouldListenAfterSpeaking && !isListening && avatarStatus === 'idle') {
@@ -456,7 +459,7 @@ export default function Home() {
         <>
             <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-primary/5 via-transparent to-transparent" />
             <main className="container mx-auto px-4 py-4 md:py-8 relative z-10 flex flex-col flex-1 overflow-hidden">
-                <div className="flex-1 flex justify-center items-center relative -mt-8 md:-mt-16">
+                <div className="flex-1 flex justify-center items-center relative -mt-16 md:-mt-24">
                     <LlamaAvatar 
                         status={avatarStatus}
                         className="scale-90 md:scale-100"
@@ -486,16 +489,14 @@ export default function Home() {
             </div>
         </>
       ) : (
-        <main className="relative z-10 flex flex-col flex-1 overflow-auto items-center justify-start w-full h-full pt-4">
-            <div className="w-full max-w-[250px] md:max-w-[300px] flex-shrink-0">
+        <main className="relative z-10 flex flex-col flex-1 overflow-auto items-center w-full h-full pt-4 px-2 sm:px-4">
+            <div className="w-full max-w-[200px] md:max-w-[250px] flex-shrink-0">
                 <LlamaAvatar status={avatarStatus} />
             </div>
-            <div className="flex-grow w-full flex items-start justify-center">
-                <ChessGame
-                    speak={speak}
-                    onExit={() => setGameMode('chat')}
-                />
-            </div>
+            <ChessGame
+                speak={speak}
+                onExit={() => setGameMode('chat')}
+            />
         </main>
       )}
     </div>

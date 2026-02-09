@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { ChessBoard, PlusCircle, Undo, Lightbulb, Bot, Info, History, SlidersHorizontal, X } from 'lucide-react';
+import { PlusCircle, Undo, X, Info, History, SlidersHorizontal } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 
@@ -25,7 +25,8 @@ function getPieceSymbol(piece: string): string {
 function formatMove(move: Move): string {
     const fromSquare = `${String.fromCharCode(97 + move.from.col)}${8 - move.from.row}`;
     const toSquare = `${String.fromCharCode(97 + move.to.col)}${8 - move.to.row}`;
-    return `pieza de ${fromSquare} a ${toSquare}`;
+    const pieceSymbol = getPieceSymbol(move.piece);
+    return `${pieceSymbol}${fromSquare}→${toSquare}`;
 }
 
 const pieceValues: { [key: string]: number } = {
@@ -77,7 +78,7 @@ export default function ChessGame({ onExit, speak }: ChessGameProps) {
                 const startRow = isWhite ? 6 : 1;
                 if (currentBoard[row + direction] && !currentBoard[row + direction][col]) {
                     moves.push({ row: row + direction, col });
-                    if (row === startRow && !currentBoard[row + 2 * direction][col]) {
+                    if (row === startRow && currentBoard[row + 2 * direction] && !currentBoard[row + 2 * direction][col]) {
                         moves.push({ row: row + 2 * direction, col });
                     }
                 }
@@ -149,17 +150,21 @@ export default function ChessGame({ onExit, speak }: ChessGameProps) {
 
         setBoard(newBoard);
         setLastMove(move);
-        setTurn(prev => prev === 'white' ? 'black' : 'white');
+        const nextTurn = turn === 'white' ? 'black' : 'white';
+        setTurn(nextTurn);
 
         // Simplified game over check
         const kings = newBoard.flat().filter(p => p.toLowerCase() === 'k');
         if (kings.length < 2) {
             setGameOver(true);
-            setStatus(`¡Jaque mate! Ganaron las ${turn === 'white' ? 'Negras' : 'Blancas'}.`);
+            const winner = captured?.toLowerCase() === 'k' ? (isWhitePiece(piece) ? 'Blancas' : 'Negras') : (turn === 'white' ? 'Blancas' : 'Negras');
+            setStatus(`¡Jaque mate! Ganaron las ${winner}.`);
         } else {
-             setStatus(`Turno de las ${turn === 'white' ? 'negras' : 'blancas'}.`);
+             setStatus(`Turno de las ${nextTurn === 'white' ? 'blancas' : 'negras'}.`);
         }
     }, [turn]);
+
+    const isWhitePiece = (piece: string) => piece === piece.toUpperCase();
 
     const handleSquareClick = useCallback((row: number, col: number) => {
         if (gameOver || turn === 'black') return;
@@ -172,7 +177,7 @@ export default function ChessGame({ onExit, speak }: ChessGameProps) {
                 setValidMoves([]);
             } else {
                 const piece = board[row][col];
-                if (piece && piece === piece.toUpperCase()) {
+                if (piece && isWhitePiece(piece)) {
                     setSelectedSquare({ row, col });
                     setValidMoves(getValidMovesForPiece(row, col, board));
                 } else {
@@ -182,7 +187,7 @@ export default function ChessGame({ onExit, speak }: ChessGameProps) {
             }
         } else {
             const piece = board[row][col];
-            if (piece && piece === piece.toUpperCase()) {
+            if (piece && isWhitePiece(piece)) {
                 setSelectedSquare({ row, col });
                 setValidMoves(getValidMovesForPiece(row, col, board));
             }
@@ -204,7 +209,7 @@ export default function ChessGame({ onExit, speak }: ChessGameProps) {
 
     const minimax = useCallback((currentBoard: string[][], depth: number, alpha: number, beta: number, isMaximizing: boolean): number => {
         if (depth === 0) {
-            return evaluateBoard(currentBoard);
+            return -evaluateBoard(currentBoard);
         }
 
         const player = isMaximizing ? 'black' : 'white';
@@ -214,9 +219,9 @@ export default function ChessGame({ onExit, speak }: ChessGameProps) {
         for (let r = 0; r < 8; r++) {
             for (let c = 0; c < 8; c++) {
                 const piece = currentBoard[r][c];
-                if (piece && ((isBlack && piece === piece.toLowerCase()) || (!isBlack && piece === piece.toUpperCase()))) {
+                if (piece && ((isBlack && !isWhitePiece(piece)) || (!isBlack && isWhitePiece(piece)))) {
                     const pieceMoves = getValidMovesForPiece(r, c, currentBoard);
-                    pieceMoves.forEach(move => allMoves.push({ from: { row: r, col: c }, to: move, piece: '', captured: null }));
+                    pieceMoves.forEach(move => allMoves.push({ from: { row: r, col: c }, to: move, piece: piece, captured: null }));
                 }
             }
         }
@@ -225,8 +230,7 @@ export default function ChessGame({ onExit, speak }: ChessGameProps) {
             let maxEval = -Infinity;
             for (const move of allMoves) {
                 const newBoard = currentBoard.map(r => [...r]);
-                const piece = newBoard[move.from.row][move.from.col];
-                newBoard[move.to.row][move.to.col] = piece;
+                newBoard[move.to.row][move.to.col] = newBoard[move.from.row][move.from.col];
                 newBoard[move.from.row][move.from.col] = '';
                 
                 const evalValue = minimax(newBoard, depth - 1, alpha, beta, false);
@@ -239,8 +243,7 @@ export default function ChessGame({ onExit, speak }: ChessGameProps) {
             let minEval = Infinity;
             for (const move of allMoves) {
                 const newBoard = currentBoard.map(r => [...r]);
-                const piece = newBoard[move.from.row][move.from.col];
-                newBoard[move.to.row][move.to.col] = piece;
+                newBoard[move.to.row][move.to.col] = newBoard[move.from.row][move.from.col];
                 newBoard[move.from.row][move.from.col] = '';
 
                 const evalValue = minimax(newBoard, depth - 1, alpha, beta, true);
@@ -260,9 +263,9 @@ export default function ChessGame({ onExit, speak }: ChessGameProps) {
         for (let r = 0; r < 8; r++) {
             for (let c = 0; c < 8; c++) {
                 const piece = currentBoard[r][c];
-                if (piece && piece === piece.toLowerCase()) { // Black pieces
+                if (piece && !isWhitePiece(piece)) { // Black pieces
                     const pieceMoves = getValidMovesForPiece(r, c, currentBoard);
-                    pieceMoves.forEach(move => allMoves.push({ from: { row: r, col: c }, to: move, piece: '', captured: null }));
+                    pieceMoves.forEach(move => allMoves.push({ from: { row: r, col: c }, to: move, piece: piece, captured: null }));
                 }
             }
         }
@@ -271,8 +274,7 @@ export default function ChessGame({ onExit, speak }: ChessGameProps) {
 
         for (const move of allMoves) {
             const newBoard = currentBoard.map(r => [...r]);
-            const piece = newBoard[move.from.row][move.from.col];
-            newBoard[move.to.row][move.to.col] = piece;
+            newBoard[move.to.row][move.to.col] = newBoard[move.from.row][move.from.col];
             newBoard[move.from.row][move.from.col] = '';
 
             const moveValue = minimax(newBoard, botDifficulty - 1, -Infinity, Infinity, false);
@@ -360,18 +362,20 @@ export default function ChessGame({ onExit, speak }: ChessGameProps) {
         if (turn === 'black' && !gameOver) {
             makeBotMove();
         }
-    }, [turn, gameOver, makeBotMove]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [turn, gameOver]);
 
     const undoMove = () => {
         if(isBotThinking || moveHistory.length === 0) return;
 
         // Undo player's move and bot's move
-        const lastPlayerMove = moveHistory[moveHistory.length - 2] || moveHistory[moveHistory.length - 1];
+        const movesToUndo = moveHistory.length % 2 === 0 ? 2 : 1;
+        if (moveHistory.length < movesToUndo) return;
         
         let boardAfterUndo = [...board];
-
-        for (let i = 0; i < (moveHistory.length >= 2 ? 2 : 1); i++) {
+        for (let i = 0; i < movesToUndo; i++) {
             const lastM = moveHistory[moveHistory.length - (i+1)];
+            if (!lastM) continue;
             const newBoard = boardAfterUndo.map(r => [...r]);
             newBoard[lastM.from.row][lastM.from.col] = lastM.piece;
             newBoard[lastM.to.row][lastM.to.col] = lastM.captured || '';
@@ -379,8 +383,8 @@ export default function ChessGame({ onExit, speak }: ChessGameProps) {
         }
 
         setBoard(boardAfterUndo);
-        setMoveHistory(prev => prev.slice(0, prev.length - (moveHistory.length >= 2 ? 2 : 1)));
-        setLastMove(moveHistory[moveHistory.length - 3] || null);
+        setMoveHistory(prev => prev.slice(0, prev.length - movesToUndo));
+        setLastMove(moveHistory[moveHistory.length - (movesToUndo + 1)] || null);
         setTurn('white');
         setGameOver(false);
         setStatus('Turno de las blancas.');
@@ -389,9 +393,9 @@ export default function ChessGame({ onExit, speak }: ChessGameProps) {
     };
 
     return (
-        <div className="w-full h-full flex flex-col md:flex-row items-center md:items-start justify-center gap-4 lg:gap-8 p-2 overflow-auto">
+        <div className="w-full flex flex-col md:flex-row items-center md:items-start justify-center gap-4 lg:gap-8 mt-4">
             {/* Game Section */}
-            <div className="flex-shrink-0 w-full max-w-lg md:max-w-md lg:max-w-lg bg-background/30 backdrop-blur-sm border border-border rounded-xl p-4 shadow-2xl">
+            <div className="flex-shrink-0 w-full max-w-[500px] bg-background/30 backdrop-blur-sm border border-border rounded-xl p-2 sm:p-4 shadow-2xl">
                 <div className="grid grid-cols-8 aspect-square border-2 border-stone-700 rounded-md overflow-hidden">
                     {board.map((row, r_idx) => (
                         row.map((piece, c_idx) => {
@@ -413,7 +417,10 @@ export default function ChessGame({ onExit, speak }: ChessGameProps) {
                                     onClick={() => handleSquareClick(r_idx, c_idx)}
                                 >
                                     {piece && (
-                                        <span className={cn("text-4xl md:text-5xl", piece === piece.toUpperCase() ? 'text-white [text-shadow:_1px_1px_3px_#000]' : 'text-black [text-shadow:_1px_1px_3px_#666]')}>
+                                        <span className={cn(
+                                            "text-2xl sm:text-4xl lg:text-5xl",
+                                            isWhitePiece(piece) ? 'text-white [text-shadow:_1px_1px_3px_#000]' : 'text-black [text-shadow:_1px_1px_3px_#666]'
+                                        )}>
                                             {getPieceSymbol(piece)}
                                         </span>
                                     )}
@@ -422,7 +429,7 @@ export default function ChessGame({ onExit, speak }: ChessGameProps) {
                         })
                     ))}
                 </div>
-                 <div className="bg-slate-800/80 rounded-lg p-3 mt-4 text-center text-lg font-bold border-l-4 border-primary">
+                 <div className="bg-slate-800/80 rounded-lg p-3 mt-4 text-center text-sm sm:text-lg font-bold border-l-4 border-primary">
                     {status}
                 </div>
                  <div className="flex flex-wrap gap-2 mt-4 justify-center">
@@ -433,13 +440,13 @@ export default function ChessGame({ onExit, speak }: ChessGameProps) {
             </div>
 
             {/* Info Section */}
-            <div className="w-full max-w-lg md:max-w-xs flex flex-col gap-4">
+            <div className="w-full max-w-[500px] md:w-[340px] flex flex-col gap-4">
                 <div className="bg-background/30 backdrop-blur-sm border border-border rounded-xl p-4 shadow-2xl">
                     <h3 className="flex items-center gap-2 text-lg font-bold text-primary border-b-2 border-border pb-2 mb-2"><Info/>Información</h3>
                     <div className="space-y-2 text-sm">
                         <div className="flex justify-between"><span>Turno:</span><span>{turn === 'white' ? 'Blancas' : 'Negras'}</span></div>
                         <div className="flex justify-between"><span>Estado:</span><span>{gameOver ? 'Terminado' : 'En juego'}</span></div>
-                        <div className="flex justify-between"><span>Jugadas:</span><span>{moveHistory.length}</span></div>
+                        <div className="flex justify-between"><span>Jugadas:</span><span>{Math.ceil(moveHistory.length / 2)}</span></div>
                     </div>
                 </div>
 
@@ -463,12 +470,13 @@ export default function ChessGame({ onExit, speak }: ChessGameProps) {
                      </div>
                 </div>
 
-                <div className="bg-background/30 backdrop-blur-sm border border-border rounded-xl p-4 shadow-2xl flex-grow flex flex-col min-h-0">
+                <div className="bg-background/30 backdrop-blur-sm border border-border rounded-xl p-4 shadow-2xl flex-grow flex flex-col min-h-[200px]">
                     <h3 className="flex items-center gap-2 text-lg font-bold text-primary border-b-2 border-border pb-2 mb-2"><History/>Historial</h3>
-                    <div className="overflow-y-auto flex-grow pr-2">
-                        <ol className="space-y-1 text-xs list-decimal list-inside">
+                    <div className="overflow-y-auto flex-grow pr-2 text-sm">
+                        <ol className="font-mono">
                             {moveHistory.filter((_, i) => i % 2 === 0).map((move, index) => (
-                                <li key={index} className="grid grid-cols-2 gap-2 font-mono">
+                                <li key={index} className="grid grid-cols-[auto,1fr,1fr] gap-x-2 items-center">
+                                    <span>{index + 1}.</span>
                                     <span>{formatMove(move)}</span>
                                     <span>{moveHistory[index * 2 + 1] ? formatMove(moveHistory[index * 2 + 1]) : '...'}</span>
                                 </li>
