@@ -1,7 +1,14 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { PlusCircle, Undo, X, Info, History, SlidersHorizontal } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import {
+  PlusCircle,
+  Undo,
+  X,
+  Info,
+  History,
+  SlidersHorizontal,
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 
@@ -15,476 +22,690 @@ type Move = { from: Square; to: Square; piece: string; captured: string | null }
 
 // Helper functions (outside component to avoid recreation on renders)
 function getPieceSymbol(piece: string): string {
-    const symbols: { [key: string]: string } = {
-        'K': '♔', 'Q': '♕', 'R': '♖', 'B': '♗', 'N': '♘', 'P': '♙',
-        'k': '♚', 'q': '♛', 'r': '♜', 'b': '♝', 'n': '♞', 'p': '♟'
-    };
-    return symbols[piece] || '';
+  const symbols: { [key: string]: string } = {
+    K: '♔',
+    Q: '♕',
+    R: '♖',
+    B: '♗',
+    N: '♘',
+    P: '♙',
+    k: '♚',
+    q: '♛',
+    r: '♜',
+    b: '♝',
+    n: '♞',
+    p: '♟',
+  };
+  return symbols[piece] || '';
 }
 
 function formatMove(move: Move): string {
-    const fromSquare = `${String.fromCharCode(97 + move.from.col)}${8 - move.from.row}`;
-    const toSquare = `${String.fromCharCode(97 + move.to.col)}${8 - move.to.row}`;
-    const pieceSymbol = getPieceSymbol(move.piece);
-    return `${pieceSymbol}${fromSquare}→${toSquare}`;
+  const fromSquare = `${String.fromCharCode(97 + move.from.col)}${
+    8 - move.from.row
+  }`;
+  const toSquare = `${String.fromCharCode(97 + move.to.col)}${
+    8 - move.to.row
+  }`;
+  const pieceSymbol = getPieceSymbol(move.piece);
+  return `${pieceSymbol}${fromSquare}→${toSquare}`;
 }
 
 const pieceValues: { [key: string]: number } = {
-    'p': 10, 'n': 30, 'b': 30, 'r': 50, 'q': 90, 'k': 900,
-    'P': -10, 'N': -30, 'B': -30, 'R': -50, 'Q': -90, 'K': -900
+  p: 10,
+  n: 30,
+  b: 30,
+  r: 50,
+  q: 90,
+  k: 900,
+  P: -10,
+  N: -30,
+  B: -30,
+  R: -50,
+  Q: -90,
+  K: -900,
+};
+
+const evaluateBoard = (currentBoard: string[][]) => {
+  let score = 0;
+  for (let r = 0; r < 8; r++) {
+    for (let c = 0; c < 8; c++) {
+      const piece = currentBoard[r][c];
+      if (piece) {
+        score += pieceValues[piece] || 0;
+
+        // Positional bonus from the JS example
+        const centerDistance = Math.abs(3.5 - r) + Math.abs(3.5 - c);
+        if (piece === piece.toLowerCase()) {
+          // Black piece
+          score += (7 - centerDistance) * 0.5;
+        } else {
+          // White piece
+          score -= (7 - centerDistance) * 0.5;
+        }
+      }
+    }
+  }
+  return score;
 };
 
 export default function ChessGame({ onExit, speak }: ChessGameProps) {
-    const [board, setBoard] = useState<string[][]>([]);
-    const [selectedSquare, setSelectedSquare] = useState<Square | null>(null);
-    const [validMoves, setValidMoves] = useState<Square[]>([]);
-    const [turn, setTurn] = useState<'white' | 'black'>('white');
-    const [gameOver, setGameOver] = useState(false);
-    const [status, setStatus] = useState('Turno de las blancas. ¡Empieza a jugar!');
-    const [moveHistory, setMoveHistory] = useState<Move[]>([]);
-    const [lastMove, setLastMove] = useState<Move | null>(null);
-    const [botDifficulty, setBotDifficulty] = useState(3);
-    const [isBotThinking, setIsBotThinking] = useState(false);
-    
-    const getValidMovesForPiece = useCallback((row: number, col: number, currentBoard: string[][]): Square[] => {
-        const piece = currentBoard[row][col];
-        const moves: Square[] = [];
-        if (!piece) return moves;
-        const isWhite = piece === piece.toUpperCase();
+  const [board, setBoard] = useState<string[][]>([]);
+  const [selectedSquare, setSelectedSquare] = useState<Square | null>(null);
+  const [validMoves, setValidMoves] = useState<Square[]>([]);
+  const [turn, setTurn] = useState<'white' | 'black'>('white');
+  const [gameOver, setGameOver] = useState(false);
+  const [status, setStatus] = useState(
+    'Turno de las blancas. ¡Empieza a jugar!'
+  );
+  const [moveHistory, setMoveHistory] = useState<Move[]>([]);
+  const [lastMove, setLastMove] = useState<Move | null>(null);
+  const [botDifficulty, setBotDifficulty] = useState(3);
+  const [isBotThinking, setIsBotThinking] = useState(false);
 
-        const addLinearMoves = (directions: number[][]) => {
-            for (const [dr, dc] of directions) {
-                let newRow = row + dr;
-                let newCol = col + dc;
-                while (newRow >= 0 && newRow < 8 && newCol >= 0 && newCol < 8) {
-                    if (!currentBoard[newRow][newCol]) {
-                        moves.push({ row: newRow, col: newCol });
-                    } else {
-                        if ((isWhite && currentBoard[newRow][newCol] === currentBoard[newRow][newCol].toLowerCase()) ||
-                            (!isWhite && currentBoard[newRow][newCol] === currentBoard[newRow][newCol].toUpperCase())) {
-                            moves.push({ row: newRow, col: newCol });
-                        }
-                        break;
-                    }
-                    newRow += dr;
-                    newCol += dc;
-                }
-            }
-        };
+  const getValidMovesForPiece = useCallback(
+    (row: number, col: number, currentBoard: string[][]): Square[] => {
+      const piece = currentBoard[row][col];
+      const moves: Square[] = [];
+      if (!piece) return moves;
+      const isWhite = piece === piece.toUpperCase();
 
-        switch (piece.toLowerCase()) {
-            case 'p':
-                const direction = isWhite ? -1 : 1;
-                const startRow = isWhite ? 6 : 1;
-                if (currentBoard[row + direction] && !currentBoard[row + direction][col]) {
-                    moves.push({ row: row + direction, col });
-                    if (row === startRow && currentBoard[row + 2 * direction] && !currentBoard[row + 2 * direction][col]) {
-                        moves.push({ row: row + 2 * direction, col });
-                    }
-                }
-                for (const dc of [-1, 1]) {
-                    const newCol = col + dc;
-                    if (newCol >= 0 && newCol < 8 && currentBoard[row + direction]?.[newCol]) {
-                        const targetPiece = currentBoard[row + direction][newCol];
-                        if ((isWhite && targetPiece === targetPiece.toLowerCase()) || (!isWhite && targetPiece === targetPiece.toUpperCase())) {
-                            moves.push({ row: row + direction, col: newCol });
-                        }
-                    }
-                }
-                break;
-            case 'r':
-                addLinearMoves([[1, 0], [-1, 0], [0, 1], [0, -1]]);
-                break;
-            case 'n':
-                const knightMoves = [[-2, -1], [-2, 1], [-1, -2], [-1, 2], [1, -2], [1, 2], [2, -1], [2, 1]];
-                for (const [dr, dc] of knightMoves) {
-                    const newRow = row + dr;
-                    const newCol = col + dc;
-                    if (newRow >= 0 && newRow < 8 && newCol >= 0 && newCol < 8) {
-                        const targetPiece = currentBoard[newRow][newCol];
-                        if (!targetPiece || (isWhite && targetPiece === targetPiece.toLowerCase()) || (!isWhite && targetPiece === targetPiece.toUpperCase())) {
-                            moves.push({ row: newRow, col: newCol });
-                        }
-                    }
-                }
-                break;
-            case 'b':
-                addLinearMoves([[1, 1], [1, -1], [-1, 1], [-1, -1]]);
-                break;
-            case 'q':
-                addLinearMoves([[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]]);
-                break;
-            case 'k':
-                for (const dr of [-1, 0, 1]) {
-                    for (const dc of [-1, 0, 1]) {
-                        if (dr === 0 && dc === 0) continue;
-                        const newRow = row + dr;
-                        const newCol = col + dc;
-                        if (newRow >= 0 && newRow < 8 && newCol >= 0 && newCol < 8) {
-                            const targetPiece = currentBoard[newRow][newCol];
-                            if (!targetPiece || (isWhite && targetPiece === targetPiece.toLowerCase()) || (!isWhite && targetPiece === targetPiece.toUpperCase())) {
-                                moves.push({ row: newRow, col: newCol });
-                            }
-                        }
-                    }
-                }
-                break;
-        }
-        return moves;
-    }, []);
-
-    const makeMove = useCallback((from: Square, to: Square, currentBoard: string[][]) => {
-        const newBoard = currentBoard.map(r => [...r]);
-        const piece = newBoard[from.row][from.col];
-        const captured = newBoard[to.row][to.col];
-        
-        const move: Move = { from, to, piece, captured };
-        setMoveHistory(prev => [...prev, move]);
-
-        newBoard[to.row][to.col] = piece;
-        newBoard[from.row][from.col] = '';
-
-        if (piece.toLowerCase() === 'p' && (to.row === 0 || to.row === 7)) {
-            newBoard[to.row][to.col] = piece === 'P' ? 'Q' : 'q';
-        }
-
-        setBoard(newBoard);
-        setLastMove(move);
-        const nextTurn = turn === 'white' ? 'black' : 'white';
-        setTurn(nextTurn);
-
-        // Simplified game over check
-        const kings = newBoard.flat().filter(p => p.toLowerCase() === 'k');
-        if (kings.length < 2) {
-            setGameOver(true);
-            const winner = captured?.toLowerCase() === 'k' ? (isWhitePiece(piece) ? 'Blancas' : 'Negras') : (turn === 'white' ? 'Blancas' : 'Negras');
-            setStatus(`¡Jaque mate! Ganaron las ${winner}.`);
-        } else {
-             setStatus(`Turno de las ${nextTurn === 'white' ? 'blancas' : 'negras'}.`);
-        }
-    }, [turn]);
-
-    const isWhitePiece = (piece: string) => piece === piece.toUpperCase();
-
-    const handleSquareClick = useCallback((row: number, col: number) => {
-        if (gameOver || turn === 'black') return;
-
-        if (selectedSquare) {
-            const isMoveValid = validMoves.some(move => move.row === row && move.col === col);
-            if (isMoveValid) {
-                makeMove(selectedSquare, { row, col }, board);
-                setSelectedSquare(null);
-                setValidMoves([]);
+      const addLinearMoves = (directions: number[][]) => {
+        for (const [dr, dc] of directions) {
+          let newRow = row + dr;
+          let newCol = col + dc;
+          while (newRow >= 0 && newRow < 8 && newCol >= 0 && newCol < 8) {
+            if (!currentBoard[newRow][newCol]) {
+              moves.push({ row: newRow, col: newCol });
             } else {
-                const piece = board[row][col];
-                if (piece && isWhitePiece(piece)) {
-                    setSelectedSquare({ row, col });
-                    setValidMoves(getValidMovesForPiece(row, col, board));
-                } else {
-                    setSelectedSquare(null);
-                    setValidMoves([]);
-                }
+              if (
+                (isWhite &&
+                  currentBoard[newRow][newCol] ===
+                    currentBoard[newRow][newCol].toLowerCase()) ||
+                (!isWhite &&
+                  currentBoard[newRow][newCol] ===
+                    currentBoard[newRow][newCol].toUpperCase())
+              ) {
+                moves.push({ row: newRow, col: newCol });
+              }
+              break;
             }
+            newRow += dr;
+            newCol += dc;
+          }
+        }
+      };
+
+      switch (piece.toLowerCase()) {
+        case 'p':
+          const direction = isWhite ? -1 : 1;
+          const startRow = isWhite ? 6 : 1;
+          if (
+            currentBoard[row + direction] &&
+            !currentBoard[row + direction][col]
+          ) {
+            moves.push({ row: row + direction, col });
+            if (
+              row === startRow &&
+              currentBoard[row + 2 * direction] &&
+              !currentBoard[row + 2 * direction][col]
+            ) {
+              moves.push({ row: row + 2 * direction, col });
+            }
+          }
+          for (const dc of [-1, 1]) {
+            const newCol = col + dc;
+            if (
+              newCol >= 0 &&
+              newCol < 8 &&
+              currentBoard[row + direction]?.[newCol]
+            ) {
+              const targetPiece = currentBoard[row + direction][newCol];
+              if (
+                (isWhite && targetPiece === targetPiece.toLowerCase()) ||
+                (!isWhite && targetPiece === targetPiece.toUpperCase())
+              ) {
+                moves.push({ row: row + direction, col: newCol });
+              }
+            }
+          }
+          break;
+        case 'r':
+          addLinearMoves([
+            [1, 0],
+            [-1, 0],
+            [0, 1],
+            [0, -1],
+          ]);
+          break;
+        case 'n':
+          const knightMoves = [
+            [-2, -1],
+            [-2, 1],
+            [-1, -2],
+            [-1, 2],
+            [1, -2],
+            [1, 2],
+            [2, -1],
+            [2, 1],
+          ];
+          for (const [dr, dc] of knightMoves) {
+            const newRow = row + dr;
+            const newCol = col + dc;
+            if (newRow >= 0 && newRow < 8 && newCol >= 0 && newCol < 8) {
+              const targetPiece = currentBoard[newRow][newCol];
+              if (
+                !targetPiece ||
+                (isWhite && targetPiece === targetPiece.toLowerCase()) ||
+                (!isWhite && targetPiece === targetPiece.toUpperCase())
+              ) {
+                moves.push({ row: newRow, col: newCol });
+              }
+            }
+          }
+          break;
+        case 'b':
+          addLinearMoves([
+            [1, 1],
+            [1, -1],
+            [-1, 1],
+            [-1, -1],
+          ]);
+          break;
+        case 'q':
+          addLinearMoves([
+            [1, 0],
+            [-1, 0],
+            [0, 1],
+            [0, -1],
+            [1, 1],
+            [1, -1],
+            [-1, 1],
+            [-1, -1],
+          ]);
+          break;
+        case 'k':
+          for (const dr of [-1, 0, 1]) {
+            for (const dc of [-1, 0, 1]) {
+              if (dr === 0 && dc === 0) continue;
+              const newRow = row + dr;
+              const newCol = col + dc;
+              if (newRow >= 0 && newRow < 8 && newCol >= 0 && newCol < 8) {
+                const targetPiece = currentBoard[newRow][newCol];
+                if (
+                  !targetPiece ||
+                  (isWhite && targetPiece === targetPiece.toLowerCase()) ||
+                  (!isWhite && targetPiece === targetPiece.toUpperCase())
+                ) {
+                  moves.push({ row: newRow, col: newCol });
+                }
+              }
+            }
+          }
+          break;
+      }
+      return moves;
+    },
+    []
+  );
+
+  const makeMove = useCallback(
+    (from: Square, to: Square, currentBoard: string[][]) => {
+      const newBoard = currentBoard.map((r) => [...r]);
+      const piece = newBoard[from.row][from.col];
+      const captured = newBoard[to.row][to.col];
+
+      const move: Move = { from, to, piece, captured };
+      setMoveHistory((prev) => [...prev, move]);
+
+      newBoard[to.row][to.col] = piece;
+      newBoard[from.row][from.col] = '';
+
+      if (piece.toLowerCase() === 'p' && (to.row === 0 || to.row === 7)) {
+        newBoard[to.row][to.col] = piece === 'P' ? 'Q' : 'q';
+      }
+
+      setBoard(newBoard);
+      setLastMove(move);
+      const nextTurn = turn === 'white' ? 'black' : 'white';
+      setTurn(nextTurn);
+
+      // Simplified game over check
+      const kings = newBoard.flat().filter((p) => p.toLowerCase() === 'k');
+      if (kings.length < 2) {
+        setGameOver(true);
+        const winner =
+          captured?.toLowerCase() === 'k'
+            ? isWhitePiece(piece)
+              ? 'Blancas'
+              : 'Negras'
+            : turn === 'white'
+              ? 'Blancas'
+              : 'Negras';
+        setStatus(`¡Jaque mate! Ganaron las ${winner}.`);
+      } else {
+        setStatus(`Turno de las ${nextTurn === 'white' ? 'blancas' : 'negras'}.`);
+      }
+    },
+    [turn]
+  );
+
+  const isWhitePiece = (piece: string) => piece === piece.toUpperCase();
+
+  const handleSquareClick = useCallback(
+    (row: number, col: number) => {
+      if (gameOver || turn === 'black') return;
+
+      if (selectedSquare) {
+        const isMoveValid = validMoves.some(
+          (move) => move.row === row && move.col === col
+        );
+        if (isMoveValid) {
+          makeMove(selectedSquare, { row, col }, board);
+          setSelectedSquare(null);
+          setValidMoves([]);
         } else {
-            const piece = board[row][col];
-            if (piece && isWhitePiece(piece)) {
-                setSelectedSquare({ row, col });
-                setValidMoves(getValidMovesForPiece(row, col, board));
-            }
+          const piece = board[row][col];
+          if (piece && isWhitePiece(piece)) {
+            setSelectedSquare({ row, col });
+            setValidMoves(getValidMovesForPiece(row, col, board));
+          } else {
+            setSelectedSquare(null);
+            setValidMoves([]);
+          }
         }
-    }, [gameOver, turn, selectedSquare, validMoves, board, makeMove, getValidMovesForPiece]);
-
-    const evaluateBoard = (currentBoard: string[][]) => {
-        let score = 0;
-        for (let r = 0; r < 8; r++) {
-            for (let c = 0; c < 8; c++) {
-                const piece = currentBoard[r][c];
-                if (piece) {
-                    score += pieceValues[piece] || 0;
-                }
-            }
+      } else {
+        const piece = board[row][col];
+        if (piece && isWhitePiece(piece)) {
+          setSelectedSquare({ row, col });
+          setValidMoves(getValidMovesForPiece(row, col, board));
         }
-        return score;
-    };
+      }
+    },
+    [
+      gameOver,
+      turn,
+      selectedSquare,
+      validMoves,
+      board,
+      makeMove,
+      getValidMovesForPiece,
+    ]
+  );
 
-    const minimax = useCallback((currentBoard: string[][], depth: number, alpha: number, beta: number, isMaximizing: boolean): number => {
-        if (depth === 0) {
-            return -evaluateBoard(currentBoard);
+  const minimax = useCallback(
+    (
+      currentBoard: string[][],
+      depth: number,
+      alpha: number,
+      beta: number,
+      isMaximizing: boolean
+    ): number => {
+      if (depth === 0) {
+        return evaluateBoard(currentBoard);
+      }
+
+      const player = isMaximizing ? 'black' : 'white';
+      const isBlack = player === 'black';
+
+      let allMoves: Move[] = [];
+      for (let r = 0; r < 8; r++) {
+        for (let c = 0; c < 8; c++) {
+          const piece = currentBoard[r][c];
+          if (
+            piece &&
+            ((isBlack && !isWhitePiece(piece)) ||
+              (!isBlack && isWhitePiece(piece)))
+          ) {
+            const pieceMoves = getValidMovesForPiece(r, c, currentBoard);
+            pieceMoves.forEach((move) =>
+              allMoves.push({
+                from: { row: r, col: c },
+                to: move,
+                piece: piece,
+                captured: null,
+              })
+            );
+          }
         }
+      }
 
-        const player = isMaximizing ? 'black' : 'white';
-        const isBlack = player === 'black';
-        
-        let allMoves: Move[] = [];
-        for (let r = 0; r < 8; r++) {
-            for (let c = 0; c < 8; c++) {
-                const piece = currentBoard[r][c];
-                if (piece && ((isBlack && !isWhitePiece(piece)) || (!isBlack && isWhitePiece(piece)))) {
-                    const pieceMoves = getValidMovesForPiece(r, c, currentBoard);
-                    pieceMoves.forEach(move => allMoves.push({ from: { row: r, col: c }, to: move, piece: piece, captured: null }));
-                }
-            }
-        }
-
-        if (isMaximizing) {
-            let maxEval = -Infinity;
-            for (const move of allMoves) {
-                const newBoard = currentBoard.map(r => [...r]);
-                newBoard[move.to.row][move.to.col] = newBoard[move.from.row][move.from.col];
-                newBoard[move.from.row][move.from.col] = '';
-                
-                const evalValue = minimax(newBoard, depth - 1, alpha, beta, false);
-                maxEval = Math.max(maxEval, evalValue);
-                alpha = Math.max(alpha, evalValue);
-                if (beta <= alpha) break;
-            }
-            return maxEval;
-        } else {
-            let minEval = Infinity;
-            for (const move of allMoves) {
-                const newBoard = currentBoard.map(r => [...r]);
-                newBoard[move.to.row][move.to.col] = newBoard[move.from.row][move.from.col];
-                newBoard[move.from.row][move.from.col] = '';
-
-                const evalValue = minimax(newBoard, depth - 1, alpha, beta, true);
-                minEval = Math.min(minEval, evalValue);
-                beta = Math.min(beta, evalValue);
-                if (beta <= alpha) break;
-            }
-            return minEval;
-        }
-    }, [getValidMovesForPiece]);
-
-    const getBestMove = useCallback((currentBoard: string[][]): Move | null => {
-        let bestMove: Move | null = null;
-        let bestValue = -Infinity;
-
-        let allMoves: Move[] = [];
-        for (let r = 0; r < 8; r++) {
-            for (let c = 0; c < 8; c++) {
-                const piece = currentBoard[r][c];
-                if (piece && !isWhitePiece(piece)) { // Black pieces
-                    const pieceMoves = getValidMovesForPiece(r, c, currentBoard);
-                    pieceMoves.forEach(move => allMoves.push({ from: { row: r, col: c }, to: move, piece: piece, captured: null }));
-                }
-            }
-        }
-
-        if (allMoves.length === 0) return null;
-
+      if (isMaximizing) {
+        let maxEval = -Infinity;
         for (const move of allMoves) {
-            const newBoard = currentBoard.map(r => [...r]);
-            newBoard[move.to.row][move.to.col] = newBoard[move.from.row][move.from.col];
-            newBoard[move.from.row][move.from.col] = '';
+          const newBoard = currentBoard.map((r) => [...r]);
+          newBoard[move.to.row][move.to.col] =
+            newBoard[move.from.row][move.from.col];
+          newBoard[move.from.row][move.from.col] = '';
 
-            const moveValue = minimax(newBoard, botDifficulty - 1, -Infinity, Infinity, false);
-
-            if (moveValue > bestValue) {
-                bestValue = moveValue;
-                bestMove = move;
-            }
+          const evalValue = minimax(newBoard, depth - 1, alpha, beta, false);
+          maxEval = Math.max(maxEval, evalValue);
+          alpha = Math.max(alpha, evalValue);
+          if (beta <= alpha) break;
         }
-        return bestMove;
+        return maxEval;
+      } else {
+        let minEval = Infinity;
+        for (const move of allMoves) {
+          const newBoard = currentBoard.map((r) => [...r]);
+          newBoard[move.to.row][move.to.col] =
+            newBoard[move.from.row][move.from.col];
+          newBoard[move.from.row][move.from.col] = '';
 
-    }, [botDifficulty, getValidMovesForPiece, minimax]);
-
-    const makeBotMove = useCallback(async () => {
-        if (gameOver) return;
-        setIsBotThinking(true);
-        setStatus('El bot está pensando...');
-        await new Promise(resolve => setTimeout(resolve, 500));
-
-        const bestMove = getBestMove(board);
-
-        if (bestMove) {
-            const pieceToMove = board[bestMove.from.row][bestMove.from.col];
-            const capturedPiece = board[bestMove.to.row][bestMove.to.col];
-            const toSquare = `${String.fromCharCode(97 + bestMove.to.col)}${8 - bestMove.to.row}`;
-
-            const pieceNames: { [key: string]: string } = {
-                'p': 'peón', 'n': 'caballo', 'b': 'alfil', 'r': 'torre', 'q': 'reina', 'k': 'rey'
-            };
-
-            const pieceName = pieceNames[pieceToMove.toLowerCase()];
-            
-            let narration = '';
-            if (capturedPiece) {
-                const capturedPieceName = pieceNames[capturedPiece.toLowerCase()];
-                const phrases = [
-                    `Mi ${pieceName} captura tu ${capturedPieceName} en ${toSquare}.`,
-                    `Con mi ${pieceName}, digo adiós a tu ${capturedPieceName}.`,
-                    `Tu ${capturedPieceName} se ha encontrado con mi ${pieceName}. ¡A ver qué haces ahora!`,
-                ];
-                narration = phrases[Math.floor(Math.random() * phrases.length)];
-            } else {
-                 const phrases = [
-                    `Muevo mi ${pieceName} a ${toSquare}.`,
-                    `Mi ${pieceName} avanza a ${toSquare}.`,
-                    `Coloco mi ${pieceName} en ${toSquare}. ¿Qué te parece?`,
-                ];
-                narration = phrases[Math.floor(Math.random() * phrases.length)];
-            }
-            
-            await speak(narration);
-            makeMove(bestMove.from, bestMove.to, board);
-        } else {
-             setStatus('¡No tengo movimientos! Creo que ganaste.');
-             setGameOver(true);
+          const evalValue = minimax(newBoard, depth - 1, alpha, beta, true);
+          minEval = Math.min(minEval, evalValue);
+          beta = Math.min(beta, evalValue);
+          if (beta <= alpha) break;
         }
-        setIsBotThinking(false);
-    }, [board, gameOver, getBestMove, makeMove, speak]);
+        return minEval;
+      }
+    },
+    [getValidMovesForPiece]
+  );
 
-    const initBoard = useCallback(() => {
-        setBoard([
-            ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'],
-            ['p', 'p', 'p', 'p', 'p', 'p', 'p', 'p'],
-            ['', '', '', '', '', '', '', ''],
-            ['', '', '', '', '', '', '', ''],
-            ['', '', '', '', '', '', '', ''],
-            ['', '', '', '', '', '', '', ''],
-            ['P', 'P', 'P', 'P', 'P', 'P', 'P', 'P'],
-            ['R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R']
-        ]);
-        setSelectedSquare(null);
-        setValidMoves([]);
-        setTurn('white');
-        setGameOver(false);
-        setMoveHistory([]);
-        setLastMove(null);
-        setStatus('Turno de las blancas. ¡Empieza a jugar!');
-    }, []);
+  const getBestMove = useCallback(
+    (currentBoard: string[][]): Move | null => {
+      let bestMove: Move | null = null;
+      let bestValue = -Infinity;
 
-    useEffect(() => {
-        initBoard();
-    }, [initBoard]);
-
-    useEffect(() => {
-        if (turn === 'black' && !gameOver) {
-            makeBotMove();
+      let allMoves: Move[] = [];
+      for (let r = 0; r < 8; r++) {
+        for (let c = 0; c < 8; c++) {
+          const piece = currentBoard[r][c];
+          if (piece && !isWhitePiece(piece)) {
+            // Black pieces
+            const pieceMoves = getValidMovesForPiece(r, c, currentBoard);
+            pieceMoves.forEach((move) =>
+              allMoves.push({
+                from: { row: r, col: c },
+                to: move,
+                piece: piece,
+                captured: null,
+              })
+            );
+          }
         }
+      }
+
+      if (allMoves.length === 0) return null;
+
+      for (const move of allMoves) {
+        const newBoard = currentBoard.map((r) => [...r]);
+        newBoard[move.to.row][move.to.col] =
+          newBoard[move.from.row][move.from.col];
+        newBoard[move.from.row][move.from.col] = '';
+
+        const moveValue = minimax(
+          newBoard,
+          botDifficulty - 1,
+          -Infinity,
+          Infinity,
+          false
+        );
+
+        if (moveValue > bestValue) {
+          bestValue = moveValue;
+          bestMove = move;
+        }
+      }
+      return bestMove;
+    },
+    [botDifficulty, getValidMovesForPiece, minimax]
+  );
+
+  const makeBotMove = useCallback(async () => {
+    if (gameOver) return;
+    setIsBotThinking(true);
+    setStatus('El bot está pensando...');
+    await new Promise((resolve) => setTimeout(resolve, 500));
+
+    const bestMove = getBestMove(board);
+
+    if (bestMove) {
+      const pieceToMove = board[bestMove.from.row][bestMove.from.col];
+      const capturedPiece = board[bestMove.to.row][bestMove.to.col];
+      const toSquare = `${String.fromCharCode(97 + bestMove.to.col)}${
+        8 - bestMove.to.row
+      }`;
+
+      const pieceNames: { [key: string]: string } = {
+        p: 'peón',
+        n: 'caballo',
+        b: 'alfil',
+        r: 'torre',
+        q: 'reina',
+        k: 'rey',
+      };
+
+      const pieceName = pieceNames[pieceToMove.toLowerCase()];
+
+      let narration = '';
+      if (capturedPiece) {
+        const capturedPieceName = pieceNames[capturedPiece.toLowerCase()];
+        const phrases = [
+          `Mi ${pieceName} captura tu ${capturedPieceName} en ${toSquare}.`,
+          `Con mi ${pieceName}, digo adiós a tu ${capturedPieceName}.`,
+          `Tu ${capturedPieceName} se ha encontrado con mi ${pieceName}. ¡A ver qué haces ahora!`,
+        ];
+        narration = phrases[Math.floor(Math.random() * phrases.length)];
+      } else {
+        const phrases = [
+          `Muevo mi ${pieceName} a ${toSquare}.`,
+          `Mi ${pieceName} avanza a ${toSquare}.`,
+          `Coloco mi ${pieceName} en ${toSquare}. ¿Qué te parece?`,
+        ];
+        narration = phrases[Math.floor(Math.random() * phrases.length)];
+      }
+
+      await speak(narration);
+      makeMove(bestMove.from, bestMove.to, board);
+    } else {
+      setStatus('¡No tengo movimientos! Creo que ganaste.');
+      setGameOver(true);
+    }
+    setIsBotThinking(false);
+  }, [board, gameOver, getBestMove, makeMove, speak]);
+
+  const initBoard = useCallback(() => {
+    setBoard([
+      ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'],
+      ['p', 'p', 'p', 'p', 'p', 'p', 'p', 'p'],
+      ['', '', '', '', '', '', '', ''],
+      ['', '', '', '', '', '', '', ''],
+      ['', '', '', '', '', '', '', ''],
+      ['', '', '', '', '', '', '', ''],
+      ['P', 'P', 'P', 'P', 'P', 'P', 'P', 'P'],
+      ['R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R'],
+    ]);
+    setSelectedSquare(null);
+    setValidMoves([]);
+    setTurn('white');
+    setGameOver(false);
+    setMoveHistory([]);
+    setLastMove(null);
+    setStatus('Turno de las blancas. ¡Empieza a jugar!');
+  }, []);
+
+  useEffect(() => {
+    initBoard();
+  }, [initBoard]);
+
+  useEffect(() => {
+    if (turn === 'black' && !gameOver) {
+      makeBotMove();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [turn, gameOver]);
+  }, [turn, gameOver]);
 
-    const undoMove = () => {
-        if(isBotThinking || moveHistory.length === 0) return;
+  const undoMove = () => {
+    if (isBotThinking || moveHistory.length === 0) return;
 
-        // Undo player's move and bot's move
-        const movesToUndo = moveHistory.length % 2 === 0 ? 2 : 1;
-        if (moveHistory.length < movesToUndo) return;
-        
-        let boardAfterUndo = [...board];
-        for (let i = 0; i < movesToUndo; i++) {
-            const lastM = moveHistory[moveHistory.length - (i+1)];
-            if (!lastM) continue;
-            const newBoard = boardAfterUndo.map(r => [...r]);
-            newBoard[lastM.from.row][lastM.from.col] = lastM.piece;
-            newBoard[lastM.to.row][lastM.to.col] = lastM.captured || '';
-            boardAfterUndo = newBoard;
-        }
+    // Undo player's move and bot's move
+    const movesToUndo = moveHistory.length % 2 === 0 ? 2 : 1;
+    if (moveHistory.length < movesToUndo) return;
 
-        setBoard(boardAfterUndo);
-        setMoveHistory(prev => prev.slice(0, prev.length - movesToUndo));
-        setLastMove(moveHistory[moveHistory.length - (movesToUndo + 1)] || null);
-        setTurn('white');
-        setGameOver(false);
-        setStatus('Turno de las blancas.');
-        setSelectedSquare(null);
-        setValidMoves([]);
-    };
+    let boardAfterUndo = [...board];
+    for (let i = 0; i < movesToUndo; i++) {
+      const lastM = moveHistory[moveHistory.length - (i + 1)];
+      if (!lastM) continue;
+      const newBoard = boardAfterUndo.map((r) => [...r]);
+      newBoard[lastM.from.row][lastM.from.col] = lastM.piece;
+      newBoard[lastM.to.row][lastM.to.col] = lastM.captured || '';
+      boardAfterUndo = newBoard;
+    }
 
-    return (
-        <div className="w-full flex flex-col md:flex-row items-center md:items-start justify-center gap-4 lg:gap-8 mt-4">
-            {/* Game Section */}
-            <div className="flex-shrink-0 w-full max-w-[500px] bg-background/30 backdrop-blur-sm border border-border rounded-xl p-2 sm:p-4 shadow-2xl">
-                <div className="grid grid-cols-8 aspect-square border-2 border-stone-700 rounded-md overflow-hidden">
-                    {board.map((row, r_idx) => (
-                        row.map((piece, c_idx) => {
-                            const isLight = (r_idx + c_idx) % 2 === 0;
-                            const isSelected = selectedSquare?.row === r_idx && selectedSquare?.col === c_idx;
-                            const isValidMove = validMoves.some(m => m.row === r_idx && m.col === c_idx);
-                            const isLastMove = (lastMove?.from.row === r_idx && lastMove?.from.col === c_idx) || (lastMove?.to.row === r_idx && lastMove?.to.col === c_idx);
+    setBoard(boardAfterUndo);
+    setMoveHistory((prev) => prev.slice(0, prev.length - movesToUndo));
+    setLastMove(moveHistory[moveHistory.length - (movesToUndo + 1)] || null);
+    setTurn('white');
+    setGameOver(false);
+    setStatus('Turno de las blancas.');
+    setSelectedSquare(null);
+    setValidMoves([]);
+  };
 
-                            return (
-                                <div 
-                                    key={`${r_idx}-${c_idx}`}
-                                    className={cn(
-                                        "flex items-center justify-center relative cursor-pointer select-none",
-                                        isLight ? 'bg-stone-200' : 'bg-stone-500',
-                                        isSelected && 'bg-yellow-400/60',
-                                        isValidMove && 'bg-green-500/40',
-                                        isLastMove && 'bg-orange-400/40'
-                                    )}
-                                    onClick={() => handleSquareClick(r_idx, c_idx)}
-                                >
-                                    {piece && (
-                                        <span className={cn(
-                                            "text-2xl sm:text-4xl lg:text-5xl",
-                                            isWhitePiece(piece) ? 'text-white [text-shadow:_1px_1px_3px_#000]' : 'text-black [text-shadow:_1px_1px_3px_#666]'
-                                        )}>
-                                            {getPieceSymbol(piece)}
-                                        </span>
-                                    )}
-                                </div>
-                            );
-                        })
-                    ))}
+  return (
+    <div className="w-full flex flex-col md:flex-row items-center md:items-start justify-center gap-4 lg:gap-8 mt-4">
+      {/* Game Section */}
+      <div className="flex-shrink-0 w-full max-w-[500px] bg-background/30 backdrop-blur-sm border border-border rounded-xl p-2 sm:p-4 shadow-2xl">
+        <div className="grid grid-cols-8 aspect-square border-2 border-stone-700 rounded-md overflow-hidden">
+          {board.map((row, r_idx) =>
+            row.map((piece, c_idx) => {
+              const isLight = (r_idx + c_idx) % 2 === 0;
+              const isSelected =
+                selectedSquare?.row === r_idx && selectedSquare?.col === c_idx;
+              const isValidMove = validMoves.some(
+                (m) => m.row === r_idx && m.col === c_idx
+              );
+              const isLastMove =
+                (lastMove?.from.row === r_idx &&
+                  lastMove?.from.col === c_idx) ||
+                (lastMove?.to.row === r_idx && lastMove?.to.col === c_idx);
+
+              return (
+                <div
+                  key={`${r_idx}-${c_idx}`}
+                  className={cn(
+                    'flex items-center justify-center relative cursor-pointer select-none',
+                    isLight ? 'bg-stone-200' : 'bg-stone-500',
+                    isSelected && 'bg-yellow-400/60',
+                    isValidMove && 'bg-green-500/40',
+                    isLastMove && 'bg-orange-400/40'
+                  )}
+                  onClick={() => handleSquareClick(r_idx, c_idx)}
+                >
+                  {piece && (
+                    <span
+                      className={cn(
+                        'text-2xl sm:text-4xl lg:text-5xl',
+                        isWhitePiece(piece)
+                          ? 'text-white [text-shadow:_1px_1px_3px_#000]'
+                          : 'text-black [text-shadow:_1px_1px_3px_#666]'
+                      )}
+                    >
+                      {getPieceSymbol(piece)}
+                    </span>
+                  )}
                 </div>
-                 <div className="bg-slate-800/80 rounded-lg p-3 mt-4 text-center text-sm sm:text-lg font-bold border-l-4 border-primary">
-                    {status}
-                </div>
-                 <div className="flex flex-wrap gap-2 mt-4 justify-center">
-                    <Button onClick={initBoard} disabled={isBotThinking}><PlusCircle/>Nuevo Juego</Button>
-                    <Button onClick={undoMove} variant="secondary" disabled={isBotThinking || moveHistory.length === 0}><Undo/>Deshacer</Button>
-                    <Button onClick={onExit} variant="destructive"><X/>Salir</Button>
-                </div>
-            </div>
-
-            {/* Info Section */}
-            <div className="w-full max-w-[500px] md:w-[340px] flex flex-col gap-4">
-                <div className="bg-background/30 backdrop-blur-sm border border-border rounded-xl p-4 shadow-2xl">
-                    <h3 className="flex items-center gap-2 text-lg font-bold text-primary border-b-2 border-border pb-2 mb-2"><Info/>Información</h3>
-                    <div className="space-y-2 text-sm">
-                        <div className="flex justify-between"><span>Turno:</span><span>{turn === 'white' ? 'Blancas' : 'Negras'}</span></div>
-                        <div className="flex justify-between"><span>Estado:</span><span>{gameOver ? 'Terminado' : 'En juego'}</span></div>
-                        <div className="flex justify-between"><span>Jugadas:</span><span>{Math.ceil(moveHistory.length / 2)}</span></div>
-                    </div>
-                </div>
-
-                <div className="bg-background/30 backdrop-blur-sm border border-border rounded-xl p-4 shadow-2xl">
-                     <h3 className="flex items-center gap-2 text-lg font-bold text-primary border-b-2 border-border pb-2 mb-2"><SlidersHorizontal/>Dificultad</h3>
-                     <div className="flex flex-col gap-2 mt-2">
-                        {[
-                            { label: 'Fácil (Profundidad 2)', level: 2 },
-                            { label: 'Intermedio (Profundidad 3)', level: 3 },
-                            { label: 'Difícil (Profundidad 4)', level: 4 },
-                        ].map(({label, level}) => (
-                             <Button 
-                                key={level}
-                                variant={botDifficulty === level ? "default" : "secondary"}
-                                onClick={() => setBotDifficulty(level)}
-                                className="w-full justify-start"
-                             >
-                                {label}
-                            </Button>
-                        ))}
-                     </div>
-                </div>
-
-                <div className="bg-background/30 backdrop-blur-sm border border-border rounded-xl p-4 shadow-2xl flex-grow flex flex-col min-h-[200px]">
-                    <h3 className="flex items-center gap-2 text-lg font-bold text-primary border-b-2 border-border pb-2 mb-2"><History/>Historial</h3>
-                    <div className="overflow-y-auto flex-grow pr-2 text-sm">
-                        <ol className="font-mono">
-                            {moveHistory.filter((_, i) => i % 2 === 0).map((move, index) => (
-                                <li key={index} className="grid grid-cols-[auto,1fr,1fr] gap-x-2 items-center">
-                                    <span>{index + 1}.</span>
-                                    <span>{formatMove(move)}</span>
-                                    <span>{moveHistory[index * 2 + 1] ? formatMove(moveHistory[index * 2 + 1]) : '...'}</span>
-                                </li>
-                            ))}
-                        </ol>
-                    </div>
-                </div>
-            </div>
+              );
+            })
+          )}
         </div>
-    );
+        <div className="bg-slate-800/80 rounded-lg p-3 mt-4 text-center text-sm sm:text-lg font-bold border-l-4 border-primary">
+          {status}
+        </div>
+        <div className="flex flex-wrap gap-2 mt-4 justify-center">
+          <Button onClick={initBoard} disabled={isBotThinking}>
+            <PlusCircle />
+            Nuevo Juego
+          </Button>
+          <Button
+            onClick={undoMove}
+            variant="secondary"
+            disabled={isBotThinking || moveHistory.length === 0}
+          >
+            <Undo />
+            Deshacer
+          </Button>
+          <Button onClick={onExit} variant="destructive">
+            <X />
+            Salir
+          </Button>
+        </div>
+      </div>
+
+      {/* Info Section */}
+      <div className="w-full max-w-[500px] md:w-[340px] flex flex-col gap-4">
+        <div className="bg-background/30 backdrop-blur-sm border border-border rounded-xl p-4 shadow-2xl">
+          <h3 className="flex items-center gap-2 text-lg font-bold text-primary border-b-2 border-border pb-2 mb-2">
+            <Info />
+            Información
+          </h3>
+          <div className="space-y-2 text-sm">
+            <div className="flex justify-between">
+              <span>Turno:</span>
+              <span>{turn === 'white' ? 'Blancas' : 'Negras'}</span>
+            </div>
+            <div className="flex justify-between">
+              <span>Estado:</span>
+              <span>{gameOver ? 'Terminado' : 'En juego'}</span>
+            </div>
+            <div className="flex justify-between">
+              <span>Jugadas:</span>
+              <span>{Math.ceil(moveHistory.length / 2)}</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-background/30 backdrop-blur-sm border border-border rounded-xl p-4 shadow-2xl">
+          <h3 className="flex items-center gap-2 text-lg font-bold text-primary border-b-2 border-border pb-2 mb-2">
+            <SlidersHorizontal />
+            Dificultad
+          </h3>
+          <div className="flex flex-col gap-2 mt-2">
+            {[
+              { label: 'Fácil (Profundidad 2)', level: 2 },
+              { label: 'Intermedio (Profundidad 3)', level: 3 },
+              { label: 'Difícil (Profundidad 4)', level: 4 },
+            ].map(({ label, level }) => (
+              <Button
+                key={level}
+                variant={botDifficulty === level ? 'default' : 'secondary'}
+                onClick={() => setBotDifficulty(level)}
+                className="w-full justify-start"
+              >
+                {label}
+              </Button>
+            ))}
+          </div>
+        </div>
+
+        <div className="bg-background/30 backdrop-blur-sm border border-border rounded-xl p-4 shadow-2xl flex-grow flex flex-col min-h-[200px]">
+          <h3 className="flex items-center gap-2 text-lg font-bold text-primary border-b-2 border-border pb-2 mb-2">
+            <History />
+            Historial
+          </h3>
+          <div className="overflow-y-auto flex-grow pr-2 text-sm">
+            <ol className="font-mono">
+              {moveHistory
+                .filter((_, i) => i % 2 === 0)
+                .map((move, index) => (
+                  <li
+                    key={index}
+                    className="grid grid-cols-[auto,1fr,1fr] gap-x-2 items-center"
+                  >
+                    <span>{index + 1}.</span>
+                    <span>{formatMove(move)}</span>
+                    <span>
+                      {moveHistory[index * 2 + 1]
+                        ? formatMove(moveHistory[index * 2 + 1])
+                        : '...'}
+                    </span>
+                  </li>
+                ))}
+            </ol>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
