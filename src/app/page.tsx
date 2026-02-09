@@ -6,6 +6,7 @@ import ChatInterface, { type Message } from '@/components/chat-interface';
 import FloatingControls from '@/components/floating-controls';
 import LlamaAvatar from '@/components/llama-avatar';
 import ChessGame from '@/components/chess-game';
+import TicTacToeGame from '@/components/tic-tac-toe-game';
 import { useSpeechRecognition } from '@/hooks/use-speech-recognition';
 
 const responses: Record<string, string[]> = {
@@ -91,7 +92,8 @@ const responses: Record<string, string[]> = {
     "¡La pachamanca es cocinar a lo grande! Usamos piedras calientes y enterramos la comida bajo tierra. Es como un spa para la comida, ¡y sale tan deliciosa que querrás pedirle matrimonio al chef! Aprenderás los secretos de esta técnica ancestral y sorprenderás a todos en casa.",
   ],
   'jugar ajedrez': ["¡Excelente! Preparando el tablero. ¡Demuéstrame tu estrategia!"],
-
+  'jugar tres en raya': ["¡Claro! Un clásico. ¡Veamos quién gana!"],
+  'jugar michi': ["¡Claro! Un clásico. ¡Veamos quién gana!"],
 
   // Páginas web
   'página web': [
@@ -268,7 +270,7 @@ export default function Home() {
   >('idle');
   const [twinkleStyles, setTwinkleStyles] = useState<TwinkleStyle[]>([]);
   const [shouldListenAfterSpeaking, setShouldListenAfterSpeaking] = useState(false);
-  const [gameMode, setGameMode] = useState<'chat' | 'chess'>('chat');
+  const [gameMode, setGameMode] = useState<'chat' | 'chess' | 'tic-tac-toe'>('chat');
   const recognitionOnTranscriptRef = useRef<(transcript: string) => void>((_) => {});
 
   const speak = useCallback((text: string) => {
@@ -412,6 +414,9 @@ export default function Home() {
         if (response.key === 'jugar ajedrez') {
             setGameMode('chess');
         }
+        if (response.key === 'jugar tres en raya' || response.key === 'jugar michi') {
+            setGameMode('tic-tac-toe');
+        }
       } catch(e) {
         console.error("Speech failed to play.", e);
       }
@@ -488,12 +493,19 @@ export default function Home() {
                 ))}
             </div>
         </>
-      ) : (
+      ) : gameMode === 'chess' ? (
         <main className="relative z-10 flex flex-col flex-1 overflow-auto items-center w-full h-full pt-4 px-2 sm:px-4">
             <div className="w-full max-w-[200px] md:max-w-[250px] flex-shrink-0">
                 <LlamaAvatar status={avatarStatus} />
             </div>
             <ChessGame
+                speak={speak}
+                onExit={() => setGameMode('chat')}
+            />
+        </main>
+      ) : (
+        <main className="relative z-10 flex flex-col flex-1 overflow-auto items-center w-full h-full">
+            <TicTacToeGame
                 speak={speak}
                 onExit={() => setGameMode('chat')}
             />
