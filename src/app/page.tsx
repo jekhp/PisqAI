@@ -5,6 +5,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import ChatInterface, { type Message } from '@/components/chat-interface';
 import FloatingControls from '@/components/floating-controls';
 import LlamaAvatar from '@/components/llama-avatar';
+import ChessGame from '@/components/chess-game';
 import { useSpeechRecognition } from '@/hooks/use-speech-recognition';
 
 const responses: Record<string, string[]> = {
@@ -89,6 +90,8 @@ const responses: Record<string, string[]> = {
   pachamanca: [
     "¡La pachamanca es cocinar a lo grande! Usamos piedras calientes y enterramos la comida bajo tierra. Es como un spa para la comida, ¡y sale tan deliciosa que querrás pedirle matrimonio al chef! Aprenderás los secretos de esta técnica ancestral y sorprenderás a todos en casa.",
   ],
+  'jugar ajedrez': ["¡Excelente! Preparando el tablero. ¡Demuéstrame tu estrategia!"],
+
 
   // Páginas web
   'página web': [
@@ -238,10 +241,16 @@ const getResponse = (text: string) => {
     
     const bestMatch = matches[0];
     const responseList = responses[bestMatch.phrase];
-    return responseList[Math.floor(Math.random() * responseList.length)];
+    return {
+        key: bestMatch.phrase,
+        text: responseList[Math.floor(Math.random() * responseList.length)]
+    };
   }
 
-  return `No entendí tu mensaje. Prueba con palabras como 'hola', 'adios', 'ayuda', etc.`;
+  return { 
+      key: 'default',
+      text: `No entendí tu mensaje. Prueba con palabras como 'hola', 'adios', 'ayuda', etc.`
+  };
 };
 
 
@@ -259,6 +268,7 @@ export default function Home() {
   >('idle');
   const [twinkleStyles, setTwinkleStyles] = useState<TwinkleStyle[]>([]);
   const [shouldListenAfterSpeaking, setShouldListenAfterSpeaking] = useState(false);
+  const [gameMode, setGameMode] = useState<'chat' | 'chess'>('chat');
   const recognitionOnTranscriptRef = useRef<(transcript: string) => void>((_) => {});
 
   const speak = useCallback((text: string) => {
@@ -385,21 +395,23 @@ export default function Home() {
         return; // Stop processing
       }
       
-      // If not just wake word, proceed as normal
       setAvatarStatus('thinking');
       await new Promise((res) => setTimeout(res, 1000));
-      const responseText = getResponse(command);
+      const response = getResponse(command);
   
       const aiMessage: Message = {
         id: crypto.randomUUID(),
-        text: responseText,
+        text: response.text,
         sender: 'ai' as const,
       };
       
       setMessages([userMessage, aiMessage]);
   
       try {
-        await speak(responseText);
+        await speak(response.text);
+        if (response.key === 'jugar ajedrez') {
+            setGameMode('chess');
+        }
       } catch(e) {
         console.error("Speech failed to play.", e);
       }
@@ -407,13 +419,13 @@ export default function Home() {
     [avatarStatus, speak]
   );
   
-  useEffect(() => {
-    recognitionOnTranscriptRef.current = processAndRespond;
-  }, [processAndRespond]);
-
   const { isListening, startListening, stopListening } = useSpeechRecognition({
     onTranscript: (transcript) => recognitionOnTranscriptRef.current(transcript),
   });
+
+  useEffect(() => {
+    recognitionOnTranscriptRef.current = processAndRespond;
+  }, [processAndRespond]);
 
   useEffect(() => {
     if (shouldListenAfterSpeaking && !isListening && avatarStatus === 'idle') {
@@ -439,41 +451,53 @@ export default function Home() {
   }, []);
 
   return (
-    <div className="h-screen w-screen flex flex-col bg-gradient-to-b from-[#0A0E17] via-[#0F172A] to-[#0A0E17] relative overflow-hidden">
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-primary/5 via-transparent to-transparent" />
-      
-      <main className="container mx-auto px-4 py-4 md:py-8 relative z-10 flex flex-col flex-1 overflow-hidden">
-        <div className="flex-1 flex justify-center items-center relative -mt-4 md:-mt-8">
-          <LlamaAvatar 
-            status={avatarStatus}
-            className="scale-90 md:scale-100"
-          />
-        </div>
-
-        <div className="flex-shrink-0">
-          <ChatInterface
-            messages={messages}
-            loading={avatarStatus === 'thinking'}
-            sendMessage={processAndRespond}
-          />
-        </div>
-      </main>
-
-      <FloatingControls
-        isListening={isListening}
-        startListening={startListening}
-        stopListening={stopListening}
-      />
-
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {twinkleStyles.map((style, i) => (
-          <div
-            key={i}
-            className="absolute w-[1px] h-[1px] bg-primary/20 rounded-full animate-twinkle"
-            style={style}
-          />
-        ))}
-      </div>
+    <div className="h-screen w-screen flex flex-col bg-gradient-to-b from-[#0A0E17] via-[#0F172A] to-[#0A0E17] relative overflow-auto">
+      {gameMode === 'chat' ? (
+        <>
+            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-primary/5 via-transparent to-transparent" />
+            <main className="container mx-auto px-4 py-4 md:py-8 relative z-10 flex flex-col flex-1 overflow-hidden">
+                <div className="flex-1 flex justify-center items-center relative -mt-8 md:-mt-16">
+                    <LlamaAvatar 
+                        status={avatarStatus}
+                        className="scale-90 md:scale-100"
+                    />
+                </div>
+                <div className="flex-shrink-0">
+                    <ChatInterface
+                        messages={messages}
+                        loading={avatarStatus === 'thinking'}
+                        sendMessage={processAndRespond}
+                    />
+                </div>
+            </main>
+            <FloatingControls
+                isListening={isListening}
+                startListening={startListening}
+                stopListening={stopListening}
+            />
+            <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                {twinkleStyles.map((style, i) => (
+                <div
+                    key={i}
+                    className="absolute w-[1px] h-[1px] bg-primary/20 rounded-full animate-twinkle"
+                    style={style}
+                />
+                ))}
+            </div>
+        </>
+      ) : (
+        <main className="relative z-10 flex flex-col flex-1 overflow-auto items-center justify-start w-full h-full pt-4">
+            <div className="w-full max-w-[250px] md:max-w-[300px] flex-shrink-0">
+                <LlamaAvatar status={avatarStatus} />
+            </div>
+            <div className="flex-grow w-full flex items-start justify-center">
+                <ChessGame
+                    speak={speak}
+                    onExit={() => setGameMode('chat')}
+                />
+            </div>
+        </main>
+      )}
     </div>
   );
 }
